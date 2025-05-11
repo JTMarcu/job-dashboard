@@ -5,16 +5,63 @@ from utils.data_fetcher import call_mcp_tool
 from modules.dashboard_template import display_dashboard
 import json
 
-st.set_page_config(page_title="MCP Dashboard Template", layout="wide")
-st.title("MCP Dashboard Template")
+st.set_page_config(page_title="Job Listings Dashboard", layout="wide")
+st.title("💼 Job Dashboard")
 
-tool_name = st.text_input("Tool name:", value="tool_a")
-tool_payload = st.text_area("Tool input (JSON):", value='{"input1": "value1"}', height=100)
+# --- Sidebar Controls ---
+with st.sidebar:
+    st.header("Search Settings")
 
-if st.button("Run Tool"):
-    try:
-        payload = json.loads(tool_payload)
-        result = call_mcp_tool(tool_name, payload)
-        display_dashboard(result)
-    except Exception as e:
-        st.error(f"Error: {e}")
+    job_categories = {
+        "🔍 View All Matching Jobs": None,  # View all at once
+        "Data Scientist": "data scientist",
+        "Machine Learning Engineer": "machine learning engineer",
+        "Business Intelligence Analyst": "BI analyst",
+        "Data Analyst": "data analyst",
+        "AI / RAG Developer": "LangChain developer",
+        "Python / Flask Developer": "python developer",
+        "Full-Stack Developer": "full-stack developer",
+        "Health Data Analyst": "medical data analyst",
+        "EdTech / Education Tools": "education technologist",
+    }
+
+    selected_label = st.selectbox("Choose a job type:", list(job_categories.keys()))
+    location = st.radio("Location:", ["San Diego", "Remote"])
+    results_per_page = st.slider("Number of results:", 1, 20, 10)
+    run_search = st.button("🔍 Search Jobs")
+
+# --- Main Panel ---
+if run_search:
+    selected_jobs = (
+        [(label, query) for label, query in job_categories.items() if query is not None]
+        if job_categories[selected_label] is None
+        else [(selected_label, job_categories[selected_label])]
+    )
+
+    for label, query in selected_jobs:
+        with st.spinner(f"Fetching jobs for '{query}' in {location}..."):
+            payload = {
+                "query": query,
+                "location": location,
+                "results_per_page": results_per_page
+            }
+            try:
+                st.subheader(f"🔎 {label} — {location}")
+                result = call_mcp_tool("fetch_job_postings", payload)
+                display_dashboard(result)
+            except Exception as e:
+                st.error(f"Failed to fetch jobs for {label}: {e}")
+
+# --- Dev Section ---
+st.markdown("### 🧪 Developer Tool (Manual Input)")
+with st.expander("Try a raw query (advanced)", expanded=False):
+    raw_tool = st.text_input("Tool name", value="fetch_job_postings")
+    raw_json = st.text_area("JSON input", value='{"query": "data analyst", "location": "Remote", "results_per_page": 5}', height=100)
+
+    if st.button("Run Raw Tool"):
+        try:
+            parsed = json.loads(raw_json)
+            result = call_mcp_tool(raw_tool, parsed)
+            display_dashboard(result)
+        except Exception as e:
+            st.error(f"Error: {e}")

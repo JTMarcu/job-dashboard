@@ -2,8 +2,12 @@
 
 from utils.data_fetcher import call_mcp_tool
 
-def test_tool_a_returns_fields():
-    result = call_mcp_tool("tool_a", {"input1": "test_value"})
+def test_fetch_job_postings_returns_results():
+    result = call_mcp_tool("fetch_job_postings", {
+        "query": "developer",
+        "location": "remote",
+        "results_per_page": 1
+    })
     assert isinstance(result, dict)
-    assert "field_a" in result
-    assert "message" in result
+    assert "results" in result
+    assert isinstance(result["results"], list)

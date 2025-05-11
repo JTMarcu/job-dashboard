@@ -2,7 +2,8 @@
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from tools.tool_a import do_something
+from mcp_server.tools.fetch_job_postings import fetch_job_postings
+
 
 app = FastAPI()
 
@@ -13,7 +14,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
-@app.post("/tools/tool_a/invoke")
-async def invoke_tool_a(request: Request):
+@app.post("/tools/fetch_job_postings/invoke")
+async def invoke_job_postings(request: Request):
     data = await request.json()
-    return do_something(**data)
+    return fetch_job_postings(**data)
