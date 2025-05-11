@@ -97,15 +97,6 @@ Then set your preferred location and hit **Search Jobs** — job results appear 
 
 ---
 
-##  Created by
-
-**Jonathan Marcu** — [jtmarcu.github.io](https://jtmarcu.github.io)
-Data Scientist & Full-Stack Developer | AI Solutions Architect
-
-[LinkedIn](https://www.linkedin.com/in/jon-marcu) · [GitHub](https://github.com/JTMarcu)
-
----
-
 ## License
 
 MIT License
