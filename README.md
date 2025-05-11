@@ -1,41 +1,48 @@
-# MCP Dashboard Template
+# Job Dashboard (Powered by MCP)
 
-A minimal, generic template for building real-time dashboards using **Streamlit**, **FastAPI**, and **Model Context Protocol (MCP)**. This scaffold lets you plug in your own tools and visualize data with zero external dependencies.
+A real-time, personalized job listings dashboard built using **Streamlit**, **FastAPI**, and **Model Context Protocol (MCP)**.  
+This tool dynamically pulls job postings based on your skills and location — perfect for job seekers, career changers, or tech portfolio builders.
 
 ---
 
 ## Features
 
-✅ Minimal setup — just run and build  
-✅ FastAPI + MCP-ready server  
-✅ Streamlit UI for tool testing  
-✅ Modular codebase for easy expansion  
-✅ `.env` config support  
-✅ No API keys required  
+✅ Tailored job searches for categories like Data Science, AI, BI, and Full-Stack Dev  
+✅ Location toggle (San Diego or Remote)  
+✅ "View All" to explore all job types in a single view  
+✅ Auto-refreshing query builder via Streamlit sidebar  
+✅ Clean UI with job titles, companies, locations, and **posting dates**  
+✅ Short descriptions previewed for fast skimming  
+✅ Built entirely in Python with real-time API integration
 
 ---
 
-## Folder Structure
+## Powered by
+
+- **Streamlit** for the frontend UI
+- **FastAPI + MCP** for backend data tool orchestration
+- **Adzuna API** for real-time job postings
+- **Python packages**: `requests`, `dotenv`, `dateutil`, `pandas`
+
+---
+
+## Project Structure
 
 ```
 
-mcp-dashboard-template/
-├── app.py
+job-dashboard/
+├── app.py                         # Streamlit dashboard UI
 ├── mcp\_server/
-│   ├── server.py
+│   ├── server.py                  # FastAPI + MCP tool registry
 │   └── tools/
-│       └── tool\_a.py
+│       └── fetch\_job\_postings.py # Adzuna API integration
 ├── modules/
-│   └── dashboard\_template.py
+│   └── dashboard\_template.py      # Dynamic result rendering
 ├── utils/
-│   └── data\_fetcher.py
-├── tests/
-│   └── test\_fetcher.py
-├── .env
-├── requirements.txt
-├── setup\_env.bat / setup\_env.sh
-├── start\_dashboard.bat / start\_dashboard.sh
-└── README.md
+│   └── data\_fetcher.py            # Calls tools via MCP
+├── .env                           # API credentials and config
+├── requirements.txt               # Dependencies
+└── README.md                      # You're here!
 
 ````
 
@@ -43,71 +50,62 @@ mcp-dashboard-template/
 
 ## Setup Instructions
 
-### Windows
+### 1. Clone the repo
 
 ```bash
-setup_env.bat
-start_dashboard.bat
+git clone https://github.com/JTMarcu/job-dashboard.git
+cd job-dashboard
 ````
 
-### macOS / Linux
+### 2. Create your `.env` file
+
+```env
+MCP_SERVER_URL=http://localhost:8000
+ADZUNA_APP_ID=your_adzuna_app_id
+ADZUNA_APP_KEY=your_adzuna_app_key
+```
+
+### 3. Install dependencies and run
 
 ```bash
-chmod +x setup_env.sh start_dashboard.sh
-./setup_env.sh
-./start_dashboard.sh
+pip install -r requirements.txt
+uvicorn mcp_server.server:app --reload
+streamlit run app.py
 ```
 
 ---
 
-## Add a New Tool
+## Example Use
 
-1. Create a new file in `mcp_server/tools/` (e.g. `tool_b.py`):
+Choose a job category like:
 
-```python
-def do_something_else(param="test"):
-    return {"output": param}
-```
+* **Data Scientist**
+* **LangChain Developer**
+* **BI Analyst**
+* **Full-Stack Developer**
 
-2. Register it in `server.py`:
-
-```python
-from tools.tool_b import do_something_else
-
-@app.post("/tools/tool_b/invoke")
-async def invoke_tool_b(request: Request):
-    data = await request.json()
-    return do_something_else(**data)
-```
-
-3. Call it via Streamlit UI:
-
-   * Tool name: `tool_b`
-   * Payload: `{ "param": "hello" }`
+Then set your preferred location and hit **Search Jobs** — job results appear with apply links, company names, and posting dates.
 
 ---
 
-## Build Your Dashboard
+## Coming Soon
 
-Modify `modules/dashboard_template.py` to control how results display:
-
-```python
-def display_dashboard(data):
-    st.title("Results")
-    st.json(data)
-```
+* ✅ CSV export
+* ✅ Keyword highlighting
+* ✅ Bookmark/saved jobs
+* ✅ Salary filters and fuzzy skill matching
 
 ---
 
-## Run Tests
+##  Created by
 
-```bash
-pytest tests/
-```
+**Jonathan Marcu** — [jtmarcu.github.io](https://jtmarcu.github.io)
+Data Scientist & Full-Stack Developer | AI Solutions Architect
+
+[LinkedIn](https://www.linkedin.com/in/jon-marcu) · [GitHub](https://github.com/JTMarcu)
 
 ---
 
 ## License
 
 MIT License
-Built with ❤️ using [Streamlit](https://streamlit.io), [FastAPI](https://fastapi.tiangolo.com), and [Model Context Protocol](https://modelcontextprotocol.io)
