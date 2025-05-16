@@ -59,6 +59,8 @@ if run_search:
                 st.error(f"Failed to fetch jobs for {label}: {e}")
 
     if all_results:
+        # Sort by recency (newest first)
+        all_results.sort(key=lambda x: x.get("created", ""), reverse=True)
         st.subheader(f"Results for '{selected_label}' in {location}")
         display_dashboard({"results": all_results, "query": selected_label, "location": location})
 
