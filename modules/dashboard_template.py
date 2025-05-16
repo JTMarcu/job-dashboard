@@ -14,15 +14,16 @@ def display_dashboard(data):
 
         for job in data["results"]:
             # --- Posted Date Logic ---
-            posted_days_ago = ""
+            posted_days_ago = "Date not available"
             created = job.get("posted") or job.get("created")
             if created:
                 try:
                     posted_date = date_parser.parse(created)
                     delta = datetime.utcnow() - posted_date
                     posted_days_ago = f"Posted {delta.days} day(s) ago"
-                except:
-                    posted_days_ago = "Date not available"
+                except Exception as e:
+                    # fallback: try to show original date string
+                    posted_days_ago = f"Posted on {created.split('T')[0]}" if 'T' in created else f"Posted: {created}"
 
             # --- Description Preview ---
             desc = job.get("description", "")
