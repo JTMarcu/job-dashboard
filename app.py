@@ -13,7 +13,7 @@ with st.sidebar:
     st.header("Search Settings")
 
     job_categories = {
-        "🔍 View All Matching Jobs": None,  # View all at once
+        "🔍 View All Matching Jobs": None,
         "Data Scientist": "data scientist",
         "Machine Learning Engineer": "machine learning engineer",
         "Business Intelligence Analyst": "BI analyst",
@@ -28,6 +28,7 @@ with st.sidebar:
     selected_label = st.selectbox("Choose a job type:", list(job_categories.keys()))
     location = st.radio("Location:", ["San Diego", "Remote"])
     results_per_page = st.slider("Number of results:", 1, 20, 10)
+    date_filter = st.selectbox("Posted Within:", ["Any time", "Today", "Past 3 days", "Past week", "Past month"])
     run_search = st.button("🔍 Search Jobs")
 
 # --- Main Panel ---
@@ -43,7 +44,8 @@ if run_search:
             payload = {
                 "query": query,
                 "location": location,
-                "results_per_page": results_per_page
+                "results_per_page": results_per_page,
+                "posted_within": date_filter
             }
             try:
                 st.subheader(f"🔎 {label} — {location}")
@@ -53,7 +55,7 @@ if run_search:
                 st.error(f"Failed to fetch jobs for {label}: {e}")
 
 # --- Dev Section ---
-st.markdown("### 🧪 Developer Tool (Manual Input)")
+st.markdown("### Developer Tool (Manual Input)")
 with st.expander("Try a raw query (advanced)", expanded=False):
     raw_tool = st.text_input("Tool name", value="fetch_job_postings")
     raw_json = st.text_area("JSON input", value='{"query": "data analyst", "location": "Remote", "results_per_page": 5}', height=100)
