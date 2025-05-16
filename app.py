@@ -6,14 +6,14 @@ from modules.dashboard_template import display_dashboard
 import json
 
 st.set_page_config(page_title="Job Listings Dashboard", layout="wide")
-st.title("💼 Job Dashboard")
+st.title("Job Dashboard")
 
 # --- Sidebar Controls ---
 with st.sidebar:
     st.header("Search Settings")
 
     job_categories = {
-        "🔍 View All Matching Jobs": None,
+        "View All Matching Jobs": None,
         "Data Scientist": "data scientist",
         "Machine Learning Engineer": "machine learning engineer",
         "Business Intelligence Analyst": "BI analyst",
@@ -29,7 +29,7 @@ with st.sidebar:
     location = st.radio("Location:", ["San Diego", "Remote"])
     results_per_page = st.slider("Number of results:", 1, 20, 10)
     date_filter = st.selectbox("Posted Within:", ["Any time", "Today", "Past 3 days", "Past week", "Past month"])
-    run_search = st.button("🔍 Search Jobs")
+    run_search = st.button("Search Jobs")
 
 # --- Main Panel ---
 if run_search:
@@ -38,6 +38,8 @@ if run_search:
         if job_categories[selected_label] is None
         else [(selected_label, job_categories[selected_label])]
     )
+
+    all_results = []
 
     for label, query in selected_jobs:
         with st.spinner(f"Fetching jobs for '{query}' in {location}..."):
@@ -48,11 +50,17 @@ if run_search:
                 "posted_within": date_filter
             }
             try:
-                st.subheader(f"🔎 {label} — {location}")
                 result = call_mcp_tool("fetch_job_postings", payload)
-                display_dashboard(result)
+                if "results" in result:
+                    for job in result["results"]:
+                        job["search_label"] = label
+                    all_results.extend(result["results"])
             except Exception as e:
                 st.error(f"Failed to fetch jobs for {label}: {e}")
+
+    if all_results:
+        st.subheader(f"Results for '{selected_label}' in {location}")
+        display_dashboard({"results": all_results, "query": selected_label, "location": location})
 
 # --- Dev Section ---
 st.markdown("### Developer Tool (Manual Input)")
