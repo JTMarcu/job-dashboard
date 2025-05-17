@@ -26,7 +26,7 @@ with st.sidebar:
     }
 
     selected_label = st.selectbox("Choose a job type:", list(job_categories.keys()))
-    location = st.radio("Location:", ["San Diego", "Remote"])
+    location = st.text_input("Enter location or ZIP code:", value="Remote")
     results_per_page = st.slider("Number of results:", 1, 20, 10)
     date_filter = st.selectbox("Posted Within:", ["Any time", "Today", "Past 3 days", "Past week", "Past month"])
     run_search = st.button("Search Jobs")
