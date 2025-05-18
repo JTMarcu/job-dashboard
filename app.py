@@ -26,9 +26,10 @@ with st.sidebar:
     }
 
     selected_label = st.selectbox("Choose a job type:", list(job_categories.keys()))
-    location = st.text_input("Enter location or ZIP code:", value="Remote")
+    location = st.text_input("Location or ZIP", value="Remote")
     results_per_page = st.slider("Number of results:", 1, 20, 10)
     date_filter = st.selectbox("Posted Within:", ["Any time", "Today", "Past 3 days", "Past week", "Past month"])
+    selected_source = st.selectbox("Job Source", ["Adzuna", "JSearch"])
     run_search = st.button("Search Jobs")
 
 # --- Main Panel ---
@@ -42,12 +43,13 @@ if run_search:
     all_results = []
 
     for label, query in selected_jobs:
-        with st.spinner(f"Fetching jobs for '{query}' in {location}..."):
+        with st.spinner(f"Fetching jobs for '{query}' in {location} from {selected_source}..."):
             payload = {
                 "query": query,
                 "location": location,
                 "results_per_page": results_per_page,
-                "posted_within": date_filter
+                "posted_within": date_filter,
+                "source": selected_source.lower()
             }
             try:
                 result = call_mcp_tool("fetch_job_postings", payload)
@@ -59,8 +61,6 @@ if run_search:
                 st.error(f"Failed to fetch jobs for {label}: {e}")
 
     if all_results:
-        # Sort by recency (newest first)
-        all_results.sort(key=lambda x: x.get("created", ""), reverse=True)
         st.subheader(f"Results for '{selected_label}' in {location}")
         display_dashboard({"results": all_results, "query": selected_label, "location": location})
 
@@ -68,7 +68,7 @@ if run_search:
 st.markdown("### Developer Tool (Manual Input)")
 with st.expander("Try a raw query (advanced)", expanded=False):
     raw_tool = st.text_input("Tool name", value="fetch_job_postings")
-    raw_json = st.text_area("JSON input", value='{"query": "data analyst", "location": "Remote", "results_per_page": 5}', height=100)
+    raw_json = st.text_area("JSON input", value='{"query": "data analyst", "location": "Remote", "results_per_page": 5, "source": "jsearch"}', height=100)
 
     if st.button("Run Raw Tool"):
         try:

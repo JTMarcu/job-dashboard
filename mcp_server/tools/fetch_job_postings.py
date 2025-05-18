@@ -8,6 +8,7 @@ from datetime import datetime
 load_dotenv()
 APP_ID = os.getenv("ADZUNA_APP_ID")
 APP_KEY = os.getenv("ADZUNA_APP_KEY")
+RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 
 def is_recent(posted_str, filter_value):
     try:
@@ -25,7 +26,61 @@ def is_recent(posted_str, filter_value):
     except:
         return True
 
-def fetch_job_postings(query="data analyst", location="San Diego", results_per_page=10, posted_within="Any time"):
+def format_post_date(created_str):
+    try:
+        created_dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        delta = (datetime.utcnow() - created_dt).days
+        created_pretty = created_dt.strftime("%Y-%m-%d")
+        if delta == 0:
+            return f"Posted on {created_pretty} (Today)"
+        elif delta == 1:
+            return f"Posted on {created_pretty} (1 day ago)"
+        else:
+            return f"Posted on {created_pretty} ({delta} days ago)"
+    except:
+        return f"Posted: {created_str}"
+
+def fetch_from_jsearch(query, location, results_per_page, posted_within):
+    if not RAPIDAPI_KEY:
+        return {"error": "Missing RAPIDAPI_KEY in .env"}
+
+    url = "https://jsearch.p.rapidapi.com/search"
+    params = {
+        "query": f"{query} in {location}",
+        "page": "1",
+        "num_pages": "1"
+    }
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+    }
+
+    try:
+        response = requests.get(url, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
+
+        jobs = []
+        for job in data.get("data", [])[:results_per_page]:
+            created_str = job.get("job_posted_at_datetime_utc")
+            date_display = format_post_date(created_str) if created_str else "Date not available"
+            if is_recent(created_str, posted_within):
+                jobs.append({
+                    "title": job.get("job_title", "No Title"),
+                    "company": job.get("employer_name", "N/A"),
+                    "location": job.get("job_city", "N/A"),
+                    "url": job.get("job_apply_link", "#"),
+                    "posted": created_str,
+                    "created": created_str,
+                    "date_display": date_display,
+                    "description": job.get("job_description", "")
+                })
+        return {"query": query, "location": location, "results": jobs}
+
+    except Exception as e:
+        return {"error": str(e)}
+
+def fetch_from_adzuna(query, location, results_per_page, posted_within):
     if not APP_ID or not APP_KEY:
         return {"error": "Missing ADZUNA_APP_ID or ADZUNA_APP_KEY in .env"}
 
@@ -47,20 +102,8 @@ def fetch_job_postings(query="data analyst", location="San Diego", results_per_p
         jobs = []
         for job in data.get("results", []):
             created_str = job.get("created")
+            date_display = format_post_date(created_str) if created_str else "Date not available"
             if is_recent(created_str, posted_within):
-                try:
-                    created_dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M:%SZ")
-                    delta = (datetime.utcnow() - created_dt).days
-                    created_pretty = created_dt.strftime("%Y-%m-%d")
-                    if delta == 0:
-                        date_display = f"Posted on {created_pretty} (Today)"
-                    elif delta == 1:
-                        date_display = f"Posted on {created_pretty} (1 day ago)"
-                    else:
-                        date_display = f"Posted on {created_pretty} ({delta} days ago)"
-                except:
-                    date_display = f"Posted: {created_str}"
-
                 jobs.append({
                     "title": job.get("title", "No Title"),
                     "company": job.get("company", {}).get("display_name", "N/A"),
@@ -76,3 +119,9 @@ def fetch_job_postings(query="data analyst", location="San Diego", results_per_p
 
     except Exception as e:
         return {"error": str(e)}
+
+def fetch_job_postings(query="data analyst", location="San Diego", results_per_page=10, posted_within="Any time", source="adzuna"):
+    if source == "jsearch":
+        return fetch_from_jsearch(query, location, results_per_page, posted_within)
+    else:
+        return fetch_from_adzuna(query, location, results_per_page, posted_within)
