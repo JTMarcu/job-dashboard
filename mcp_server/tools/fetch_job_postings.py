@@ -62,11 +62,14 @@ def fetch_from_jsearch(query, location, results_per_page, posted_within):
         response.raise_for_status()
         data = response.json()
 
+        raw_results = data.get("data", [])
+        print(f"JSearch returned {len(raw_results)} raw jobs for '{query}'")
+
         jobs = []
-        for job in data.get("data", [])[:results_per_page]:
+        for job in raw_results:
             created_str = job.get("job_posted_at_datetime_utc")
-            date_display = format_post_date(created_str) if created_str else "Date not available"
             if is_recent(created_str, posted_within):
+                date_display = format_post_date(created_str) if created_str else "Date not available"
                 jobs.append({
                     "title": job.get("job_title", "No Title"),
                     "company": job.get("employer_name", "N/A"),
@@ -78,7 +81,10 @@ def fetch_from_jsearch(query, location, results_per_page, posted_within):
                     "description": job.get("job_description", "")
                 })
 
-        jobs.sort(key=lambda x: x.get("created", ""), reverse=True)
+        jobs.sort(key=lambda x: x.get("created") or "", reverse=True)
+        jobs = jobs[:results_per_page]
+
+        print(f"Filtered to {len(jobs)} jobs after date check and slicing")
         return {"query": query, "location": location, "results": jobs}
 
     except Exception as e:
@@ -119,7 +125,7 @@ def fetch_from_adzuna(query, location, results_per_page, posted_within):
                     "description": job.get("description", "")
                 })
 
-        jobs.sort(key=lambda x: x.get("created", ""), reverse=True)
+        jobs.sort(key=lambda x: x.get("created") or "", reverse=True)
         return {"query": query, "location": location, "results": jobs}
 
     except Exception as e:
