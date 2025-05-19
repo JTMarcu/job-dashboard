@@ -27,18 +27,20 @@ def is_recent(posted_str, filter_value):
         return True
 
 def format_post_date(created_str):
-    try:
-        created_dt = datetime.strptime(created_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        delta = (datetime.utcnow() - created_dt).days
-        created_pretty = created_dt.strftime("%Y-%m-%d")
-        if delta == 0:
-            return f"Posted on {created_pretty} (Today)"
-        elif delta == 1:
-            return f"Posted on {created_pretty} (1 day ago)"
-        else:
-            return f"Posted on {created_pretty} ({delta} days ago)"
-    except:
-        return f"Posted: {created_str}"
+    for fmt in ("%Y-%m-%dT%H:%M:%S.%fZ", "%Y-%m-%dT%H:%M:%SZ"):
+        try:
+            created_dt = datetime.strptime(created_str, fmt)
+            delta = (datetime.utcnow() - created_dt).days
+            created_pretty = created_dt.strftime("%Y-%m-%d")
+            if delta == 0:
+                return f"Posted on {created_pretty} (Today)"
+            elif delta == 1:
+                return f"Posted on {created_pretty} (1 day ago)"
+            else:
+                return f"Posted on {created_pretty} ({delta} days ago)"
+        except ValueError:
+            continue
+    return f"Posted: {created_str}"
 
 def fetch_from_jsearch(query, location, results_per_page, posted_within):
     if not RAPIDAPI_KEY:
@@ -75,6 +77,8 @@ def fetch_from_jsearch(query, location, results_per_page, posted_within):
                     "date_display": date_display,
                     "description": job.get("job_description", "")
                 })
+
+        jobs.sort(key=lambda x: x.get("created", ""), reverse=True)
         return {"query": query, "location": location, "results": jobs}
 
     except Exception as e:
@@ -115,6 +119,7 @@ def fetch_from_adzuna(query, location, results_per_page, posted_within):
                     "description": job.get("description", "")
                 })
 
+        jobs.sort(key=lambda x: x.get("created", ""), reverse=True)
         return {"query": query, "location": location, "results": jobs}
 
     except Exception as e:

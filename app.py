@@ -26,6 +26,8 @@ with st.sidebar:
     }
 
     selected_label = st.selectbox("Choose a job type:", list(job_categories.keys()))
+    custom_keywords = st.text_input("Or enter keywords (comma-separated):", value="")
+
     location = st.text_input("Location or ZIP", value="Remote")
     results_per_page = st.slider("Number of results:", 1, 20, 10)
     date_filter = st.selectbox("Posted Within:", ["Any time", "Today", "Past 3 days", "Past week", "Past month"])
@@ -34,11 +36,18 @@ with st.sidebar:
 
 # --- Main Panel ---
 if run_search:
-    selected_jobs = (
-        [(label, query) for label, query in job_categories.items() if query is not None]
-        if job_categories[selected_label] is None
-        else [(selected_label, job_categories[selected_label])]
-    )
+    keyword_list = [k.strip() for k in custom_keywords.split(",") if k.strip()]
+    selected_jobs = []
+
+    if keyword_list:
+        selected_jobs = [(kw, kw) for kw in keyword_list]
+        query_label = f"Custom: {custom_keywords}"
+    elif job_categories[selected_label] is None:
+        selected_jobs = [(label, query) for label, query in job_categories.items() if query]
+        query_label = selected_label
+    else:
+        selected_jobs = [(selected_label, job_categories[selected_label])]
+        query_label = selected_label
 
     all_results = []
 
@@ -61,8 +70,8 @@ if run_search:
                 st.error(f"Failed to fetch jobs for {label}: {e}")
 
     if all_results:
-        st.subheader(f"Results for '{selected_label}' in {location}")
-        display_dashboard({"results": all_results, "query": selected_label, "location": location})
+        st.subheader(f"Results for '{query_label}' in {location}")
+        display_dashboard({"results": all_results, "query": query_label, "location": location})
 
 # --- Dev Section ---
 st.markdown("### Developer Tool (Manual Input)")
