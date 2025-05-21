@@ -1,4 +1,4 @@
-# job-dashboard/pages/3_Resume_Guided_Form.py
+# job-dashboard/pages/2_Resume_Guided_Form.py
 
 import streamlit as st
 import pandas as pd
