@@ -1,80 +1,85 @@
 # Job Dashboard + Resume Builder (Powered by MCP)
 
-A Python-powered job dashboard and smart resume builder that helps you:
+A modular Python project to supercharge your job search with automation and AI. This tool helps you:
 
-✅ Discover job listings tailored to your skills  
-✅ Build and export clean, ATS-friendly resumes  
-✅ Integrate with real-time job APIs like Adzuna and JSearch  
-✅ Maintain a portable, modular codebase
-
----
-
-## 🔍 Features
-
-### 💼 Job Dashboard
-- Browse jobs by category (Data, AI, BI, Full-Stack, etc.)
-- Keyword + location filtering (e.g. "Remote", "San Diego")
-- Real-time listings from Adzuna or JSearch (via MCP)
-
-### 📄 Resume Builder
-- Upload or build your resume using an interactive form
-- Edit technical skills using grouped subsections
-- Export fully formatted PDF resumes from structured CSV
-- Save and reload resume data
+[x] Discover real-time job listings tailored to your role and location  
+[x] Build and export clean, ATS-optimized resumes from structured data  
+[x] Seamlessly integrate job search tools via a local FastAPI backend  
+[x] Maintain a portable, extensible, and Pythonic codebase
 
 ---
 
-## 🛠 Tech Stack
+## Future Goals (Planned Features)
 
-- **Streamlit** – frontend dashboard & builder
-- **FastAPI** – backend server for tool orchestration
-- **MCP (Model Context Protocol)** – connects job tools via tool calls
-- **ReportLab** – clean PDF generation from CSV
-- **Pandas + Requests** – data wrangling and API calls
+**Intelligent Job-to-Resume Matching**  
+Enter a job description → auto-tune your master resume to match  
+**1-Click Tailored Resume + Cover Letter Generator**  
+Click a job → output custom resume and AI-generated cover letter  
+**Chatbot Q&A for Job Prep**  
+Ask "How should I answer this interview question?" or "What are they looking for?"  
+**Application Tracker & Exporter**  
+Save roles you're applying to and export application logs
 
 ---
 
-## 📁 Project Structure
+## Current Features
+
+### Job Dashboard
+- Browse categorized job listings (Data, ML, BI, Full-Stack, EdTech, etc.)
+- Filter by keyword, location (e.g. "Remote", "San Diego"), date, and API source
+- Pull listings in real-time from **Adzuna** or **JSearch** (via MCP tool calls)
+
+### Guided Resume Builder
+- Upload or build your resume using a CSV-based form
+- Supports multiple jobs, projects, and certifications with grouped inputs
+- Exports structured data to PDF with consistent formatting
+- PDF is optimized for ATS scanning and clean presentation
+
+---
+
+## Tech Stack
+
+- **Streamlit** – frontend dashboard and resume builder UI
+- **FastAPI** – backend server to orchestrate job tool calls
+- **MCP (Model Context Protocol)** – tool call routing and modular execution
+- **ReportLab** – high-quality PDF generation
+- **Pandas** – data structuring and transformation
+- **Requests** – job API integration (Adzuna, JSearch)
+
+---
+
+## Project Structure
 
 ```
 
-JOB-DASHBOARD/
-├── app.py                    # Main Streamlit app
-├── README.md                 # This file
-├── requirements.txt          # Python dependencies
-├── .env                      # API credentials
-
-├── exports/                  # Generated CSV and PDF resumes
-
-├── pages/
-│   └── 1\_Build\_Resume.py     # Streamlit resume builder
+job-dashboard/
+├── app.py                      # Streamlit frontend
+├── requirements.txt            # Dependencies
+├── .env                        # API credentials
+├── start\_dashboard.sh/.bat     # Startup scripts
 
 ├── resume/
-│   ├── generate\_pdf.py       # CSV → PDF logic
-│   └── exports/              # (optional PDF output location)
+│   ├── generate\_pdf.py         # CSV → PDF exporter
+
+├── pages/
+│   └── 1\_Build\_Resume.py       # Guided resume builder (Streamlit)
 
 ├── mcp\_server/
-│   ├── server.py             # FastAPI MCP server
+│   ├── server.py               # FastAPI backend server
 │   └── tools/
-│       └── fetch\_job\_postings.py  # Job API tool
+│       └── fetch\_job\_postings.py  # Job API integration
 
 ├── modules/
-│   └── dashboard\_template.py # UI for job listings
+│   └── dashboard\_template.py   # Job card UI logic
 
 ├── utils/
-│   └── data\_fetcher.py       # MCP tool caller
-
-├── tests/
-│   └── test\_fetcher.py       # Job tool test stub
-
-├── setup\_env.bat / .sh       # Quick-start shell scripts
-├── start\_dashboard.bat / .sh
+│   └── data\_fetcher.py         # Calls MCP tool endpoints
 
 ````
 
 ---
 
-## ⚙️ Setup Instructions
+## Setup Instructions
 
 ### 1. Clone the repo
 
@@ -83,7 +88,7 @@ git clone https://github.com/YOUR_USERNAME/job-dashboard.git
 cd job-dashboard
 ````
 
-### 2. Add `.env` with your API keys
+### 2. Create `.env` with your API keys
 
 ```env
 MCP_SERVER_URL=http://localhost:8000
@@ -95,36 +100,30 @@ RAPIDAPI_KEY=your_jsearch_api_key
 ### 3. Install dependencies
 
 ```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Start the backend + frontend
+### 4. Run the dashboard
 
 ```bash
-uvicorn mcp_server.server:app --reload
-streamlit run app.py
+bash start_dashboard.sh
+# or on Windows
+start_dashboard.bat
 ```
 
 ---
 
-## 💡 Example Use
+## Completed Milestones
 
-* Search for job listings with filters like `Full-Stack Developer`, `Remote`
-* Click into **Build Resume** tab
-* Upload your existing CSV or fill out the resume form
-* Click **Generate PDF** to download your tailored resume
-
----
-
-## ✅ Completed Milestones
-
-* [x] Job dashboard with API sources
-* [x] Resume builder form + CSV upload
-* [x] PDF export from CSV (ATS-friendly)
-* [x] Full local development support
+* [x] Real-time job dashboard with filters
+* [x] Resume builder with grouped form sections
+* [x] CSV-to-PDF resume export with ATS format
+* [x] Modular FastAPI + Streamlit local dev setup
 
 ---
 
-## 🪪 License
+## License
 
 MIT License
