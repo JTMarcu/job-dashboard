@@ -1,5 +1,3 @@
-# job-dashboard/resume/generate_pdf.py
-
 import pandas as pd
 from reportlab.lib.pagesizes import LETTER
 from reportlab.pdfgen import canvas
@@ -42,6 +40,12 @@ def draw_text_with_bold(c, text, x, y, width):
         y = check_page_break(c, y)
     return y
 
+def is_content_visible(text):
+    if not text or pd.isna(text):
+        return False
+    stripped = text.replace("**", "").replace("|", "").strip()
+    return bool(stripped)
+
 def create_ats_resume_pdf(csv_path, output_path):
     try:
         df = pd.read_csv(csv_path, sep=',', engine='python', quoting=csv.QUOTE_MINIMAL)
@@ -68,6 +72,7 @@ def create_ats_resume_pdf(csv_path, output_path):
 
     personal_info = df[(df["section"] == "personal_info") & 
                        (~df["subsection"].isin(["name", "target_roles"]))]
+
     personal_info_string = " | ".join(personal_info["content"].dropna().astype(str).tolist())
 
     portfolio = df.loc[(df["section"] == "personal_info") & (df["subsection"] == "portfolio"), "content"].values
@@ -96,6 +101,9 @@ def create_ats_resume_pdf(csv_path, output_path):
             continue
 
         group = df[df["section"] == section]
+
+        # Filter out empty content
+        group = group[group["content"].apply(is_content_visible)]
         if group.empty:
             continue
 
@@ -108,20 +116,13 @@ def create_ats_resume_pdf(csv_path, output_path):
         y = check_page_break(c, y)
 
         if section == "technical_skills":
-            skill_lines = []
             for _, row in group.iterrows():
-                content = str(row.get("content", "")).strip()
-                if content:
-                    skill_lines.append(content)
-
-            for line in skill_lines:
-                y = draw_text_with_bold(c, line, LEFT_MARGIN, y, PAGE_WIDTH)
+                y = draw_text_with_bold(c, row["content"], LEFT_MARGIN, y, PAGE_WIDTH)
                 y -= 3
                 y = check_page_break(c, y)
         else:
             for _, row in group.iterrows():
-                text = str(row.get("content", "")).strip()
-                y = draw_text_with_bold(c, text, LEFT_MARGIN, y, PAGE_WIDTH)
+                y = draw_text_with_bold(c, row["content"], LEFT_MARGIN, y, PAGE_WIDTH)
                 y -= 3
                 y = check_page_break(c, y)
 
