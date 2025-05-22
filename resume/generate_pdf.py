@@ -12,9 +12,10 @@ PAGE_WIDTH, PAGE_HEIGHT = LETTER
 
 # Font settings
 HEADER_FONT = ("Helvetica-Bold", 12)
-SUBHEADER_FONT = ("Helvetica-Bold", 10)
-NORMAL_FONT = ("Helvetica", 8)
-ITALIC_FONT = ("Helvetica-Oblique", 8)
+SUBHEADER_FONT = ("Helvetica-Bold", 11)
+NORMAL_FONT = ("Helvetica", 9)
+ITALIC_FONT = ("Helvetica-Oblique", 9)
+
 
 def check_page_break(c, y_position):
     if y_position < LINE_HEIGHT * 2:
@@ -23,28 +24,34 @@ def check_page_break(c, y_position):
         return PAGE_HEIGHT - TOP_MARGIN
     return y_position
 
+
 def draw_text_with_bold(c, text, x, y, width):
-    lines = simpleSplit(text, NORMAL_FONT[0], NORMAL_FONT[1], width - LEFT_MARGIN*2)
-    for line in lines:
-        x_pos = LEFT_MARGIN
-        segments = line.split('**')
-        bold = False
-        for segment in segments:
-            font = ("Helvetica-Bold", NORMAL_FONT[1]) if bold else NORMAL_FONT
-            c.setFont(*font)
-            c.drawString(x_pos, y, segment)
-            seg_width = c.stringWidth(segment, font[0], font[1])
-            x_pos += seg_width
-            bold = not bold
-        y -= LINE_HEIGHT
-        y = check_page_break(c, y)
+    # preserve line breaks from multiline content
+    paragraphs = text.split('\n')
+    for para in paragraphs:
+        lines = simpleSplit(para.strip(), NORMAL_FONT[0], NORMAL_FONT[1], width - LEFT_MARGIN * 2)
+        for line in lines:
+            x_pos = LEFT_MARGIN
+            segments = line.split('**')
+            bold = False
+            for segment in segments:
+                font = ("Helvetica-Bold", NORMAL_FONT[1]) if bold else NORMAL_FONT
+                c.setFont(*font)
+                c.drawString(x_pos, y, segment)
+                seg_width = c.stringWidth(segment, font[0], font[1])
+                x_pos += seg_width
+                bold = not bold
+            y -= LINE_HEIGHT
+            y = check_page_break(c, y)
     return y
+
 
 def is_content_visible(text):
     if not text or pd.isna(text):
         return False
     stripped = text.replace("**", "").replace("|", "").strip()
     return bool(stripped)
+
 
 def create_ats_resume_pdf(csv_path, output_path):
     try:
@@ -66,14 +73,14 @@ def create_ats_resume_pdf(csv_path, output_path):
     try:
         name = df.loc[(df["section"] == "personal_info") & (df["subsection"] == "name"), "content"].values[0]
         target_roles = df.loc[(df["section"] == "personal_info") & (df["subsection"] == "target_roles"), "content"].values[0]
+        role_set = list(dict.fromkeys([r.strip() for r in target_roles.split('|')]))
+        target_roles = " | ".join(role_set)
     except IndexError:
         print("Required personal_info fields (name/target_roles) are missing in the CSV.")
         return
 
-    personal_info = df[(df["section"] == "personal_info") & 
-                       (~df["subsection"].isin(["name", "target_roles"]))]
-
-    personal_info_string = " | ".join(personal_info["content"].dropna().astype(str).tolist())
+    personal_info = df[(df["section"] == "personal_info") & (~df["subsection"].isin(["name", "target_roles"]))]
+    personal_info_string = " • ".join(personal_info["content"].dropna().astype(str).tolist())
 
     portfolio = df.loc[(df["section"] == "personal_info") & (df["subsection"] == "portfolio"), "content"].values
     portfolio_link = portfolio[0] if len(portfolio) > 0 else None
@@ -101,8 +108,6 @@ def create_ats_resume_pdf(csv_path, output_path):
             continue
 
         group = df[df["section"] == section]
-
-        # Filter out empty content
         group = group[group["content"].apply(is_content_visible)]
         if group.empty:
             continue
@@ -115,16 +120,11 @@ def create_ats_resume_pdf(csv_path, output_path):
         y -= int(LINE_HEIGHT * 1.1)
         y = check_page_break(c, y)
 
-        if section == "technical_skills":
-            for _, row in group.iterrows():
-                y = draw_text_with_bold(c, row["content"], LEFT_MARGIN, y, PAGE_WIDTH)
-                y -= 3
-                y = check_page_break(c, y)
-        else:
-            for _, row in group.iterrows():
-                y = draw_text_with_bold(c, row["content"], LEFT_MARGIN, y, PAGE_WIDTH)
-                y -= 3
-                y = check_page_break(c, y)
+        for _, row in group.iterrows():
+            content = row["content"].strip()
+            y = draw_text_with_bold(c, content, LEFT_MARGIN, y, PAGE_WIDTH)
+            y -= 3
+            y = check_page_break(c, y)
 
         y -= 8
         y = check_page_break(c, y)

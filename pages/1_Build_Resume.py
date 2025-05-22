@@ -1,5 +1,3 @@
-# pages/1_Build_Resume.py
-
 import streamlit as st
 import pandas as pd
 import json
@@ -11,7 +9,6 @@ from resume.generate_pdf import create_ats_resume_pdf
 st.set_page_config(page_title="Guided Resume Builder", layout="wide")
 st.title("🧭 Guided Resume Builder")
 
-# --- Helpers ---
 def normalize_text(text):
     return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
 
@@ -28,8 +25,7 @@ def get_val(df, sec, sub):
     match = df[(df.section == sec) & (df.subsection == sub)]
     return match.content.values[0] if not match.empty else ""
 
-# --- Upload CSV or JSON ---
-uploaded = st.file_uploader("📤 Upload a resume (CSV or JSON)", type=["csv", "json"])
+uploaded = st.file_uploader("\U0001F4E4 Upload a resume (CSV or JSON)", type=["csv", "json"])
 if uploaded:
     if uploaded.name.endswith(".json"):
         df_master = pd.DataFrame(json.load(uploaded))
@@ -43,8 +39,7 @@ else:
 
 rows = []
 
-# --- Personal Info ---
-st.header("👤 Personal Info")
+st.header("\U0001F464 Personal Info")
 name = st.text_input("Full Name", get_val(df_master, "personal_info", "name"))
 location = st.text_input("Location", get_val(df_master, "personal_info", "location"))
 email = st.text_input("Email", get_val(df_master, "personal_info", "email"))
@@ -62,19 +57,16 @@ rows += [
     {"section": "personal_info", "subsection": "portfolio", "content": portfolio},
 ]
 
-# --- Target Roles ---
-st.header("🎯 Target Roles")
+st.header("\U0001F3AF Target Roles")
 roles = st.text_input("What roles are you targeting?", get_val(df_master, "personal_info", "target_roles"))
 rows.append({"section": "personal_info", "subsection": "target_roles", "content": roles})
 
-# --- Professional Summary ---
-st.header("📝 Professional Summary")
+st.header("\U0001F4DD Professional Summary")
 summary = st.text_area("Write a 2–4 sentence summary of your strengths and interests", get_val(df_master, "professional_summary", "summary"), height=180)
 if summary.strip():
     rows.append({"section": "professional_summary", "subsection": "summary", "content": summary})
 
-# --- Technical Skills ---
-st.header("🧠 Technical Skills")
+st.header("\U0001F9E0 Technical Skills")
 skills_df = df_master[df_master.section == "technical_skills"][["subsection", "content"]].copy()
 skills_df["content"] = skills_df["content"].str.replace(r" \| ", ", ", regex=False)
 skills_editor = st.data_editor(skills_df if not skills_df.empty else pd.DataFrame([
@@ -86,8 +78,7 @@ for _, row in skills_editor.iterrows():
         pipe = " | ".join([s.strip() for s in str(row["content"]).split(",")])
         rows.append({"section": "technical_skills", "subsection": row["subsection"], "content": pipe})
 
-# --- Professional Experience ---
-st.header("💼 Professional Experience")
+st.header("\U0001F4BC Professional Experience")
 exp_blocks = group_blocks(df_master, "professional_experience")
 exp_count = st.number_input("How many jobs?", min_value=1, max_value=10, value=max(1, len(exp_blocks)), step=1)
 
@@ -111,11 +102,14 @@ for i in range(exp_count):
         if title and company and dates:
             block = f"**{title} | {company} | {dates}**"
             if desc.strip():
-                block += "\n" + desc
+                bullets_cleaned = "\n" + "\n".join(
+                    line.strip() if line.strip().startswith("•") else f"• {line.strip()}"
+                    for line in desc.strip().splitlines() if line.strip()
+                )
+                block += bullets_cleaned
             rows.append({"section": "professional_experience", "subsection": sub, "content": block})
 
-# --- Certifications ---
-st.header("📜 Certifications")
+st.header("\U0001F4DC Certifications")
 cert_blocks = group_blocks(df_master, "certifications")
 cert_count = st.number_input("How many certifications?", min_value=1, max_value=20, value=max(1, len(cert_blocks)), step=1)
 
@@ -132,8 +126,7 @@ for i in range(cert_count):
         if title and date:
             rows.append({"section": "certifications", "subsection": sub, "content": f"{title.strip()} | {date.strip()}"})
 
-# --- Education ---
-st.header("🎓 Education")
+st.header("\U0001F393 Education")
 edu_blocks = group_blocks(df_master, "education")
 edu_count = st.number_input("How many education entries?", min_value=1, max_value=10, value=max(1, len(edu_blocks)), step=1)
 
@@ -157,11 +150,13 @@ for i in range(edu_count):
         if degree and school and date:
             block = f"**{degree} | {school} | {date}**"
             if notes_val.strip():
-                block += "\n" + notes_val
+                block += "\n" + "\n".join(
+                    line.strip() if line.strip().startswith("•") else f"• {line.strip()}"
+                    for line in notes_val.strip().splitlines() if line.strip()
+                )
             rows.append({"section": "education", "subsection": sub, "content": block})
 
-# --- Projects ---
-st.header("📁 Projects")
+st.header("\U0001F4C1 Projects")
 proj_blocks = group_blocks(df_master, "projects")
 proj_count = st.number_input("How many projects?", min_value=1, max_value=30, value=max(1, len(proj_blocks)), step=1)
 
@@ -180,11 +175,13 @@ for i in range(proj_count):
         if title.strip():
             block = f"**{title}**"
             if desc.strip():
-                block += "\n" + desc
+                block += "\n" + "\n".join(
+                    line.strip() if line.strip().startswith("•") else f"• {line.strip()}"
+                    for line in desc.strip().splitlines() if line.strip()
+                )
             rows.append({"section": "projects", "subsection": sub, "content": block})
 
-# --- Export Resume ---
-st.header("📄 Export Resume")
+st.header("\U0001F4C4 Export Resume")
 df_out = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
 col1, col2, col3 = st.columns([1, 1, 2])
 
