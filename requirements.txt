@@ -5,3 +5,5 @@ requests
 python-dotenv
 pytest
 reportlab
+scikit-learn
+openai
