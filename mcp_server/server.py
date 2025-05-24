@@ -6,6 +6,7 @@ from mcp_server.tools.fetch_job_postings import fetch_job_postings
 from mcp_server.tools.job_matcher import match_resume_to_job
 from mcp_server.tools.rewrite_resume_bullets import rewrite_resume_bullets
 from mcp_server.tools.rewrite_target_roles import rewrite_target_roles
+from mcp_server.tools.full_resume_rewriter_openai import full_resume_rewriter
 
 app = FastAPI()
 
@@ -35,3 +36,8 @@ async def invoke_rewriter(request: Request):
 async def invoke_roles(request: Request):
     data = await request.json()
     return rewrite_target_roles(**data)
+
+@app.post("/tools/full_resume_rewriter/invoke")
+async def invoke_full_resume_rewriter(request: Request):
+    data = await request.json()
+    return full_resume_rewriter(**data)
