@@ -1,55 +1,122 @@
-# mcp_server/tools/full_resume_rewriter.py
+# utils/rewrite_utils.py
+import ast
+import json
 
-import pandas as pd
-from utils.rewrite_utils import sanitize_resume_blocks
-from utils.rewrite_blocks import (
-    rewrite_target_roles,
-    rewrite_summary,
-    rewrite_bullets
-)
+USER_PROFILE_PATH = "users/user_profile.json"
 
-def full_resume_rewriter(job_description: str, resume_rows: list):
+# Utility: Pad or trim bullet lines
+def pad_bullets(lines, limit):
+    lines = [l.strip() for l in lines if l.strip()]
+    lines = [f"\u2022 {l}" if not l.startswith("\u2022") else l for l in lines]
+    sample_phrases = [
+        "Demonstrated adaptability in fast-paced environments",
+        "Improved operational efficiency through data insights",
+        "Collaborated across departments to meet objectives",
+        "Utilized analytical tools to guide business strategy",
+        "Supported project deliverables through targeted research"
+    ]
+    while len(lines) < limit:
+        lines.append(f"\u2022 {sample_phrases[len(lines) % len(sample_phrases)]}")
+    return lines[:limit]
+
+# Final cleanup and enforcement
+def sanitize_resume_blocks(blocks):
+    job_counter = 0
+    proj_counter = 0
+    final_blocks = []
+    seen = set()
+    tech_skills_fields = [
+        "programming_languages", "libraries_frameworks", "tools_platforms", "other_skills"
+    ]
+    skill_blocks = {key: None for key in tech_skills_fields}
+    cert_blocks = []
+    cert_seen = set()
+
+    # Process all blocks
+    for block in blocks:
+        key = tuple(block.items())
+        if key in seen:
+            continue
+        seen.add(key)
+
+        section = block.get("section", "").strip()
+        subsection = block.get("subsection", "").strip()
+        content = block.get("content", "").strip()
+
+        if section == "personal_info" and subsection == "target_roles":
+            roles = [r.strip() for r in content.split("|") if r.strip()]
+            if len(roles) < 4:
+                roles += ["(Other Relevant Role)"] * (4 - len(roles))
+            block["content"] = " | ".join(roles[:4])
+
+        elif section == "professional_experience":
+            job_counter += 1
+            lines = [l for l in content.split("\n") if l.strip()]
+            header = lines[0] if lines else ""
+            bullets = pad_bullets(lines[1:], 4 if job_counter in [1, 2] else 2)
+            block["subsection"] = f"job_{job_counter}"
+            block["content"] = "\n".join([header] + bullets)
+
+        elif section == "projects":
+            if proj_counter >= 4:
+                continue
+            lines = [l for l in content.split("\n") if l.strip()]
+            if not lines:
+                continue
+            header = lines[0]
+            bullets = pad_bullets(lines[1:], 2)[:2]
+            proj_counter += 1
+            block["subsection"] = f"proj_{proj_counter}"
+            block["content"] = "\n".join([header] + bullets)
+            final_blocks.append(block)
+            continue
+
+
+        elif section == "technical_skills" and subsection in tech_skills_fields:
+            items = [x.strip() for x in content.split("|") if x.strip()]
+            items = (items + ["..."] * 5)[:5]
+            skill_blocks[subsection] = {
+                "section": section,
+                "subsection": subsection,
+                "content": " | ".join(items)
+            }
+            continue
+
+        elif section == "certifications":
+            if content in cert_seen:
+                continue
+            cert_seen.add(content)
+            cert_blocks.append(block)
+            continue
+
+        final_blocks.append(block)
+
+    # Inject stable personal_info
     try:
-        df = pd.DataFrame(resume_rows)
-        if df.empty or not set(["section", "subsection", "content"]).issubset(df.columns):
-            return {"error": "Invalid resume format. Must include section, subsection, content."}
+        with open(USER_PROFILE_PATH, "r") as f:
+            profile = json.load(f)
+        for field in ["name", "location", "email", "phone", "linkedin", "github", "portfolio"]:
+            final_blocks.insert(0, {
+                "section": "personal_info",
+                "subsection": field,
+                "content": profile.get(field, "")
+            })
+    except Exception:
+        pass
 
-        blocks = df.to_dict(orient="records")
-        updated_blocks = []
+    # Insert cleaned skill blocks
+    for sub, b in skill_blocks.items():
+        final_blocks.append(b if b else {
+            "section": "technical_skills", "subsection": sub, "content": ""
+        })
 
-        for block in blocks:
-            section = block["section"].strip()
-            sub = block["subsection"].strip()
-            content = block["content"].strip()
+    final_blocks += cert_blocks
+    return final_blocks
 
-            # Rewrite target_roles
-            if section == "personal_info" and sub == "target_roles":
-                block["content"] = rewrite_target_roles(job_description, content)
-
-            # Rewrite professional summary
-            elif section == "professional_summary":
-                block["content"] = rewrite_summary(job_description, content)
-
-            # Rewrite bullets in experience (4/4/2) using job_# tag
-            elif section == "professional_experience":
-                lines = [l for l in content.split("\n") if l.strip()]
-                header = lines[0] if lines else ""
-                bullets = [b.replace("\u2022", "").strip() for b in lines[1:]]
-                limit = 4 if sub.endswith("1") or sub.endswith("2") else 2
-                rewritten = rewrite_bullets(job_description, header, bullets, limit)
-                block["content"] = f"{header}\n" + "\n".join(rewritten.splitlines())
-
-            # Rewrite project bullets (2 each)
-            elif section == "projects":
-                lines = [l for l in content.split("\n") if l.strip()]
-                header = lines[0] if lines else ""
-                bullets = [b.replace("\u2022", "").strip() for b in lines[1:]]
-                rewritten = rewrite_bullets(job_description, header, bullets, 2)
-                block["content"] = f"{header}\n" + "\n".join(rewritten.splitlines())
-
-            updated_blocks.append(block)
-
-        return {"rewritten_blocks": sanitize_resume_blocks(updated_blocks)}
-
+# Parse and clean final model response
+def parse_and_sanitize_output(raw_response):
+    try:
+        parsed = ast.literal_eval(raw_response.strip())
+        return sanitize_resume_blocks(parsed)
     except Exception as e:
-        return {"error": str(e)}
+        return [{"section": "error", "subsection": "parse_fail", "content": str(e)}]
