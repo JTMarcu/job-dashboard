@@ -1,3 +1,5 @@
+# pages/2_Create_Resume.py
+
 import streamlit as st
 import pandas as pd
 import json
@@ -5,9 +7,18 @@ import os
 import csv
 import unicodedata
 from resume.generate_pdf import create_ats_resume_pdf
+from utils.profile_loader import load_user_profile
+
+if "active_profile" not in st.session_state:
+    st.warning("Please select a user profile before continuing.")
+    st.stop()
+
+profile_name = st.session_state["active_profile"]
+profile = load_user_profile(profile_name)
+master_resume_path = os.path.join("users", f"{profile_name}_master_resume.csv")
 
 st.set_page_config(page_title="Guided Resume Builder", layout="wide")
-st.title("🧭 Guided Resume Builder")
+st.title("Guided Resume Builder")
 
 def normalize_text(text):
     return unicodedata.normalize("NFKD", str(text)).encode("ascii", "ignore").decode("ascii")
@@ -25,7 +36,15 @@ def get_val(df, sec, sub):
     match = df[(df.section == sec) & (df.subsection == sub)]
     return match.content.values[0] if not match.empty else ""
 
-uploaded = st.file_uploader("\U0001F4E4 Upload a resume (CSV or JSON)", type=["csv", "json"])
+# === File Upload or Master Resume Loader ===
+df_master = pd.DataFrame(columns=["section", "subsection", "content"])
+use_master = False
+
+uploaded = st.file_uploader("Upload a resume (CSV or JSON)", type=["csv", "json"])
+if os.path.exists(master_resume_path):
+    if st.button("Fill with Master Resume"):
+        use_master = True
+
 if uploaded:
     if uploaded.name.endswith(".json"):
         df_master = pd.DataFrame(json.load(uploaded))
@@ -33,13 +52,17 @@ if uploaded:
     else:
         df_master = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
         st.success("CSV uploaded and loaded.")
-else:
-    df_master = pd.DataFrame(columns=["section", "subsection", "content"])
+elif use_master:
+    df_master = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
+    st.success("Master Resume loaded.")
+
+if df_master.empty:
     st.info("No file uploaded. Starting with a blank resume.")
 
+# === Resume Form ===
 rows = []
 
-st.header("\U0001F464 Personal Info")
+st.header("Personal Info")
 name = st.text_input("Full Name", get_val(df_master, "personal_info", "name"))
 location = st.text_input("Location", get_val(df_master, "personal_info", "location"))
 email = st.text_input("Email", get_val(df_master, "personal_info", "email"))
@@ -57,16 +80,16 @@ rows += [
     {"section": "personal_info", "subsection": "portfolio", "content": portfolio},
 ]
 
-st.header("\U0001F3AF Target Roles")
+st.header("Target Roles")
 roles = st.text_input("What roles are you targeting?", get_val(df_master, "personal_info", "target_roles"))
 rows.append({"section": "personal_info", "subsection": "target_roles", "content": roles})
 
-st.header("\U0001F4DD Professional Summary")
+st.header("Professional Summary")
 summary = st.text_area("Write a 2–4 sentence summary of your strengths and interests", get_val(df_master, "professional_summary", "summary"), height=180)
 if summary.strip():
     rows.append({"section": "professional_summary", "subsection": "summary", "content": summary})
 
-st.header("\U0001F9E0 Technical Skills")
+st.header("Technical Skills")
 skills_df = df_master[df_master.section == "technical_skills"][["subsection", "content"]].copy()
 skills_df["content"] = skills_df["content"].str.replace(r" \| ", ", ", regex=False)
 skills_editor = st.data_editor(skills_df if not skills_df.empty else pd.DataFrame([
@@ -78,7 +101,7 @@ for _, row in skills_editor.iterrows():
         pipe = " | ".join([s.strip() for s in str(row["content"]).split(",")])
         rows.append({"section": "technical_skills", "subsection": row["subsection"], "content": pipe})
 
-st.header("\U0001F4BC Professional Experience")
+st.header("Professional Experience")
 exp_blocks = group_blocks(df_master, "professional_experience")
 exp_count = st.number_input("How many jobs?", min_value=1, max_value=10, value=max(1, len(exp_blocks)), step=1)
 
@@ -109,7 +132,7 @@ for i in range(exp_count):
                 block += bullets_cleaned
             rows.append({"section": "professional_experience", "subsection": sub, "content": block})
 
-st.header("\U0001F4DC Certifications")
+st.header("Certifications")
 cert_blocks = group_blocks(df_master, "certifications")
 cert_count = st.number_input("How many certifications?", min_value=1, max_value=20, value=max(1, len(cert_blocks)), step=1)
 
@@ -126,7 +149,7 @@ for i in range(cert_count):
         if title and date:
             rows.append({"section": "certifications", "subsection": sub, "content": f"{title.strip()} | {date.strip()}"})
 
-st.header("\U0001F393 Education")
+st.header("Education")
 edu_blocks = group_blocks(df_master, "education")
 edu_count = st.number_input("How many education entries?", min_value=1, max_value=10, value=max(1, len(edu_blocks)), step=1)
 
@@ -156,7 +179,7 @@ for i in range(edu_count):
                 )
             rows.append({"section": "education", "subsection": sub, "content": block})
 
-st.header("\U0001F4C1 Projects")
+st.header("Projects")
 proj_blocks = group_blocks(df_master, "projects")
 proj_count = st.number_input("How many projects?", min_value=1, max_value=30, value=max(1, len(proj_blocks)), step=1)
 
@@ -181,7 +204,8 @@ for i in range(proj_count):
                 )
             rows.append({"section": "projects", "subsection": sub, "content": block})
 
-st.header("\U0001F4C4 Export Resume")
+# Export
+st.header("Export Resume")
 df_out = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
 col1, col2, col3 = st.columns([1, 1, 2])
 
@@ -191,10 +215,17 @@ with col1:
 with col2:
     st.download_button("⬇️ JSON", json.dumps(df_out.to_dict(orient="records"), indent=2).encode("utf-8"), file_name="resume_data.json")
 
+# PDF generation without clearing state
+if "pdf_ready" not in st.session_state:
+    st.session_state["pdf_ready"] = False
+
 with col3:
     if st.button("Generate ATS PDF"):
         os.makedirs("exports", exist_ok=True)
         df_out.to_csv("exports/generated_resume.csv", index=False)
         create_ats_resume_pdf("exports/generated_resume.csv", "exports/resume_output.pdf")
-        with open("exports/resume_output.pdf", "rb") as f:
-            st.download_button("⬇️ Download PDF", f, file_name="resume_output.pdf", mime="application/pdf")
+        st.session_state["pdf_ready"] = True
+
+if st.session_state["pdf_ready"] and os.path.exists("exports/resume_output.pdf"):
+    with open("exports/resume_output.pdf", "rb") as f:
+        st.download_button("⬇️ Download PDF", f, file_name="resume_output.pdf", mime="application/pdf")

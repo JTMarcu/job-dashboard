@@ -1,9 +1,17 @@
-# app.py
+# pages\1_Explore_Jobs.py
 
 import streamlit as st
 from utils.data_fetcher import call_mcp_tool
 from modules.dashboard_template import display_dashboard
 import json
+import streamlit as st
+from utils.profile_loader import load_user_profile
+
+if "active_profile" not in st.session_state:
+    st.warning("Please select a user profile before continuing.")
+    st.stop()
+
+profile = load_user_profile(st.session_state["active_profile"])
 
 st.set_page_config(page_title="Job Listings Dashboard", layout="wide")
 st.title("Job Dashboard")

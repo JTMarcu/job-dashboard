@@ -9,4 +9,4 @@ uvicorn mcp_server.server:app --reload &
 sleep 2
 
 echo "Starting Streamlit dashboard..."
-streamlit run app.py
+streamlit run 0_Select_profile.py

@@ -2,84 +2,106 @@
 
 A modular Python project to supercharge your job search with automation and AI. This tool helps you:
 
-[x] Discover real-time job listings tailored to your role and location  
-[x] Build and export clean, ATS-optimized resumes from structured data  
-[x] Seamlessly integrate job search tools via a local FastAPI backend  
-[x] Maintain a portable, extensible, and Pythonic codebase
+- ✅ Discover real-time job listings tailored to your role and location  
+- ✅ Build and export clean, ATS-optimized resumes from structured data  
+- ✅ Seamlessly integrate job search tools via a local FastAPI backend  
+- ✅ Maintain a portable, extensible, and Pythonic codebase  
+- ✅ Switch between multiple user profiles and Master Resumes
 
 ---
 
-## Future Goals (Planned Features)
+## 🔐 New: User Profile System
 
-**Intelligent Job-to-Resume Matching**  
-Enter a job description → auto-tune your master resume to match  
-**1-Click Tailored Resume + Cover Letter Generator**  
-Click a job → output custom resume and AI-generated cover letter  
-**Chatbot Q&A for Job Prep**  
-Ask "How should I answer this interview question?" or "What are they looking for?"  
-**Application Tracker & Exporter**  
-Save roles you're applying to and export application logs
+- Select or upload your profile on first launch
+- Each profile gets its own editable JSON and optional Master Resume CSV
+- All pages auto-load profile and resume data tied to the selected user
 
 ---
 
-## Current Features
+## 💼 Current Features
 
-### Job Dashboard
+### Explore Jobs
 - Browse categorized job listings (Data, ML, BI, Full-Stack, EdTech, etc.)
 - Filter by keyword, location (e.g. "Remote", "San Diego"), date, and API source
-- Pull listings in real-time from **Adzuna** or **JSearch** (via MCP tool calls)
+- Fetch live results from **Adzuna** or **JSearch** (via FastAPI tool calls)
 
-### Guided Resume Builder
-- Upload or build your resume using a CSV-based form
+### Create Resume
+- Build or upload your resume using a smart CSV-based form
 - Supports multiple jobs, projects, and certifications with grouped inputs
-- Exports structured data to PDF with consistent formatting
-- PDF is optimized for ATS scanning and clean presentation
+- Autofill with your profile + Master Resume CSV
+- Fields persist after export (no reset on PDF download)
+- Outputs to CSV, JSON, and polished ATS-friendly PDF
+
+### Tailor Resume (Beta)
+- Paste a job description and generate a customized resume using OpenAI or Ollama
+- Still under active development for full job-to-resume matching
+- Choose between OpenAI or Ollama (local) for rewriting
+- Fully supports LLaMA 3 and other Ollama-hosted models
 
 ---
 
-## Tech Stack
+## 🧠 Future Goals
 
-- **Streamlit** – frontend dashboard and resume builder UI
-- **FastAPI** – backend server to orchestrate job tool calls
-- **MCP (Model Context Protocol)** – tool call routing and modular execution
-- **ReportLab** – high-quality PDF generation
-- **Pandas** – data structuring and transformation
-- **Requests** – job API integration (Adzuna, JSearch)
+- **One-Click Cover Letter Generator**  
+  Click a job → output matching resume + AI-written cover letter
+
+- **Interview Assistant Q&A**  
+  "How should I answer this job's most likely questions?"
+
+- **Application Tracker**  
+  Track jobs applied to, export to CSV/Notion
+
+- **Unified Job + Resume Dashboard**  
+  One page to view jobs, tailor, and apply
 
 ---
 
-## Project Structure
+## 🛠️ Tech Stack
+
+- **Streamlit** – frontend UI for dashboard and resume builder
+- **FastAPI** – local backend for job tools (MCP)
+- **ReportLab** – ATS-optimized PDF resume generation
+- **Pandas** – structured resume storage + export
+- **Requests** – API calls to Adzuna, JSearch, Ollama/OpenAI
+- **Ollama + LLaMA 3** – run local LLMs for resume rewriting without API cost
+
+---
+
+## 📁 Project Structure (v0.5)
 
 ```
 
 job-dashboard/
-├── app.py                      # Streamlit frontend
-├── requirements.txt            # Dependencies
-├── .env                        # API credentials
-├── start\_dashboard.sh/.bat     # Startup scripts
+├── 0\_Select\_Profile.py           # New entry point: choose or upload a user
+├── pages/
+│   ├── 1\_Explore\_Jobs.py         # Job listings dashboard
+│   ├── 2\_Create\_Resume.py        # Guided resume builder (form-based)
+│   └── 3\_Tailor\_Resume.py        # AI-based resume tailoring (OpenAI/Ollama)
 
 ├── resume/
-│   ├── generate\_pdf.py         # CSV → PDF exporter
-
-├── pages/
-│   └── 1\_Build\_Resume.py       # Guided resume builder (Streamlit)
-
-├── mcp\_server/
-│   ├── server.py               # FastAPI backend server
-│   └── tools/
-│       └── fetch\_job\_postings.py  # Job API integration
+│   └── generate\_pdf.py           # CSV → ATS PDF exporter
 
 ├── modules/
-│   └── dashboard\_template.py   # Job card UI logic
+│   └── dashboard\_template.py     # Job card display logic
 
 ├── utils/
-│   └── data\_fetcher.py         # Calls MCP tool endpoints
+│   ├── data\_fetcher.py           # Calls FastAPI tools
+│   ├── rewrite\_utils.py          # Bullet/summary rewriting helpers
+│   └── profile\_loader.py         # Load/save profile JSONs
+
+├── mcp\_server/
+│   ├── server.py                 # FastAPI backend
+│   └── tools/fetch\_job\_postings.py
+
+├── users/
+│   └── \[name].json               # User profile
+│   └── \[name]\_master\_resume.csv  # (optional) full resume data
 
 ````
 
 ---
 
-## Setup Instructions
+## ⚙️ Setup Instructions
 
 ### 1. Clone the repo
 
@@ -105,7 +127,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Run the dashboard
+### 4. Launch the dashboard
 
 ```bash
 bash start_dashboard.sh
@@ -115,15 +137,17 @@ start_dashboard.bat
 
 ---
 
-## Completed Milestones
+## ✅ Completed Milestones (v0.5)
 
-* [x] Real-time job dashboard with filters
-* [x] Resume builder with grouped form sections
-* [x] CSV-to-PDF resume export with ATS format
-* [x] Modular FastAPI + Streamlit local dev setup
+* [x] User profiles with stored resume and profile info
+* [x] Real-time job dashboard with category + keyword filtering
+* [x] CSV-based guided resume builder with grouped inputs
+* [x] Full-form persistence using Streamlit `session_state`
+* [x] Clean PDF exports from form or uploaded data
+* [x] Modular, scalable FastAPI + Streamlit architecture
 
 ---
 
-## License
+## 📜 License
 
 MIT License

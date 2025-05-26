@@ -5,4 +5,4 @@ start cmd /k "call venv\Scripts\activate && uvicorn mcp_server.server:app --relo
 timeout /t 3 >nul
 
 echo Starting Streamlit app...
-start cmd /k "call venv\Scripts\activate && streamlit run app.py"
+start cmd /k "call venv\Scripts\activate && streamlit run 0_Select_profile.py"
