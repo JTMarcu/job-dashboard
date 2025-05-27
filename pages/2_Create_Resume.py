@@ -42,34 +42,39 @@ use_master = False
 
 uploaded = st.file_uploader("Upload a resume (CSV or JSON)", type=["csv", "json"])
 if os.path.exists(master_resume_path):
-    if st.button("Fill with Master Resume"):
+    if st.button("Use Master Resume"):
         use_master = True
 
 if uploaded:
     if uploaded.name.endswith(".json"):
-        df_master = pd.DataFrame(json.load(uploaded))
+        df_loaded = pd.DataFrame(json.load(uploaded))
         st.success("JSON uploaded and loaded.")
     else:
-        df_master = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
+        df_loaded = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
         st.success("CSV uploaded and loaded.")
+    st.session_state["df_master"] = df_loaded.copy()
+
 elif use_master:
-    df_master = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
+    df_loaded = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
+    st.session_state["df_master"] = df_loaded.copy()
     st.success("Master Resume loaded.")
+
+# Either from session or new blank
+df_master = st.session_state.get("df_master", pd.DataFrame(columns=["section", "subsection", "content"]))
 
 if df_master.empty:
     st.info("No file uploaded. Starting with a blank resume.")
 
-# === Resume Form ===
 rows = []
 
 st.header("Personal Info")
-name = st.text_input("Full Name", get_val(df_master, "personal_info", "name"))
-location = st.text_input("Location", get_val(df_master, "personal_info", "location"))
-email = st.text_input("Email", get_val(df_master, "personal_info", "email"))
-phone = st.text_input("Phone", get_val(df_master, "personal_info", "phone"))
-linkedin = st.text_input("LinkedIn", get_val(df_master, "personal_info", "linkedin"))
-github = st.text_input("GitHub", get_val(df_master, "personal_info", "github"))
-portfolio = st.text_input("Portfolio", get_val(df_master, "personal_info", "portfolio"))
+name = st.text_input("Full Name", get_val(df_master, "personal_info", "name"), key="name")
+location = st.text_input("Location", get_val(df_master, "personal_info", "location"), key="location")
+email = st.text_input("Email", get_val(df_master, "personal_info", "email"), key="email")
+phone = st.text_input("Phone", get_val(df_master, "personal_info", "phone"), key="phone")
+linkedin = st.text_input("LinkedIn", get_val(df_master, "personal_info", "linkedin"), key="linkedin")
+github = st.text_input("GitHub", get_val(df_master, "personal_info", "github"), key="github")
+portfolio = st.text_input("Portfolio", get_val(df_master, "personal_info", "portfolio"), key="portfolio")
 rows += [
     {"section": "personal_info", "subsection": "name", "content": name},
     {"section": "personal_info", "subsection": "location", "content": location},
@@ -81,11 +86,11 @@ rows += [
 ]
 
 st.header("Target Roles")
-roles = st.text_input("What roles are you targeting?", get_val(df_master, "personal_info", "target_roles"))
+roles = st.text_input("What roles are you targeting?", get_val(df_master, "personal_info", "target_roles"), key="target_roles")
 rows.append({"section": "personal_info", "subsection": "target_roles", "content": roles})
 
 st.header("Professional Summary")
-summary = st.text_area("Write a 2–4 sentence summary of your strengths and interests", get_val(df_master, "professional_summary", "summary"), height=180)
+summary = st.text_area("Write a 2-4 sentence summary of your strengths and interests", get_val(df_master, "professional_summary", "summary"), height=180)
 if summary.strip():
     rows.append({"section": "professional_summary", "subsection": "summary", "content": summary})
 
@@ -204,28 +209,31 @@ for i in range(proj_count):
                 )
             rows.append({"section": "projects", "subsection": sub, "content": block})
 
-# Export
+# Persist updated content into session
+st.session_state["df_master"] = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
+
 st.header("Export Resume")
-df_out = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
 col1, col2, col3 = st.columns([1, 1, 2])
 
 with col1:
-    st.download_button("⬇️ CSV", df_out.to_csv(index=False).encode("utf-8"), file_name="resume_data.csv")
+    csv_data = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
+    st.download_button("⬇️ CSV", csv_data.to_csv(index=False).encode("utf-8"), file_name="resume_data.csv")
 
 with col2:
-    st.download_button("⬇️ JSON", json.dumps(df_out.to_dict(orient="records"), indent=2).encode("utf-8"), file_name="resume_data.json")
-
-# PDF generation without clearing state
-if "pdf_ready" not in st.session_state:
-    st.session_state["pdf_ready"] = False
+    st.download_button("⬇️ JSON", json.dumps(csv_data.to_dict(orient="records"), indent=2).encode("utf-8"), file_name="resume_data.json")
 
 with col3:
     if st.button("Generate ATS PDF"):
+        df_out = pd.DataFrame([r for r in rows if str(r["content"]).strip()])
         os.makedirs("exports", exist_ok=True)
-        df_out.to_csv("exports/generated_resume.csv", index=False)
-        create_ats_resume_pdf("exports/generated_resume.csv", "exports/resume_output.pdf")
-        st.session_state["pdf_ready"] = True
+        csv_path = "exports/generated_resume.csv"
+        pdf_path = "exports/resume_output.pdf"
 
-if st.session_state["pdf_ready"] and os.path.exists("exports/resume_output.pdf"):
-    with open("exports/resume_output.pdf", "rb") as f:
-        st.download_button("⬇️ Download PDF", f, file_name="resume_output.pdf", mime="application/pdf")
+        df_out.to_csv(csv_path, index=False)
+        create_ats_resume_pdf(csv_path, pdf_path)
+
+        if os.path.exists(pdf_path):
+            with open(pdf_path, "rb") as f:
+                st.download_button("⬇️ Download PDF", f, file_name="resume_output.pdf", mime="application/pdf")
+        else:
+            st.error("PDF generation failed. Please make sure you've filled out the form completely.")
