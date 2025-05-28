@@ -20,21 +20,23 @@ profile_name = st.session_state["active_profile"]
 profile_data = load_user_profile(profile_name)
 master_resume_path = os.path.join("users", f"{profile_name}_master_resume.csv")
 
-uploaded = st.file_uploader("Upload your resume (CSV)", type=["csv"])
-use_master = False
+uploaded = st.file_uploader("Upload your resume (CSV)", type=["csv"], key="resume_upload")
+
 if os.path.exists(master_resume_path):
     if st.button("Use Master Resume"):
-        use_master = True
+        st.session_state["resume_df"] = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
+        st.success("Loaded Master Resume.")
 
 if uploaded:
-    resume_df = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
-elif use_master:
-    resume_df = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
-    st.success("Loaded Master Resume.")
-else:
+    st.session_state["resume_df"] = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
+    st.success("Uploaded Resume Loaded.")
+
+# Check for stored resume
+if "resume_df" not in st.session_state:
     st.info("Please upload a resume CSV or use your Master Resume to get started.")
     st.stop()
 
+resume_df = st.session_state["resume_df"]
 resume_rows = resume_df.to_dict(orient="records")
 
 st.subheader("Paste Job Description")

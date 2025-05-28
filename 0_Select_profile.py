@@ -1,5 +1,3 @@
-# 0_Select_Profile.py
-
 import os
 import streamlit as st
 import json
@@ -16,23 +14,25 @@ if "active_profile" not in st.session_state:
 
     profile_files = sorted([
         f for f in os.listdir(USER_DIR)
-        if f.endswith(".json") and os.path.isfile(os.path.join(USER_DIR, f))
+        if f.endswith(".json") and os.path.isfile(os.path.join(USER_DIR, f)) and f != "active_profile.json"
     ])
     profile_names = [os.path.splitext(f)[0] for f in profile_files]
 
     if profile_names:
-        st.subheader("👤 Choose a profile:")
+        st.subheader("Choose a profile:")
         cols = st.columns(3)
         for i, name in enumerate(profile_names):
             with cols[i % 3]:
                 if st.button(f"{name.title()}", key=f"profile_{name}"):
                     st.session_state["active_profile"] = name
+                    with open(os.path.join(USER_DIR, "active_profile.json"), "w") as f:
+                        json.dump({"active_profile": name}, f)
                     st.rerun()
     else:
         st.warning("No profiles found. Upload or create one below.")
 
     st.divider()
-    st.subheader("📤 Upload New Profile (JSON)")
+    st.subheader("Upload New Profile (JSON)")
     upload = st.file_uploader("Upload JSON file", type=["json"])
     if upload:
         try:
@@ -40,13 +40,16 @@ if "active_profile" not in st.session_state:
             new_name = os.path.splitext(upload.name)[0]
             with open(os.path.join(USER_DIR, f"{new_name}.json"), "w") as f:
                 json.dump(content, f, indent=2)
+            with open(os.path.join(USER_DIR, "active_profile.json"), "w") as f:
+                json.dump({"active_profile": new_name}, f)
             st.success(f"Uploaded and saved profile: {new_name}")
+            st.session_state["active_profile"] = new_name
             st.rerun()
         except Exception as e:
             st.error(f"Upload failed: {e}")
 
     st.divider()
-    st.subheader("📝 Create New Profile")
+    st.subheader("Create New Profile")
     with st.form("new_profile_form"):
         name = st.text_input("Full Name")
         email = st.text_input("Email")
@@ -70,6 +73,8 @@ if "active_profile" not in st.session_state:
                 }
                 with open(os.path.join(USER_DIR, f"{profile_id}.json"), "w") as f:
                     json.dump(profile_data, f, indent=2)
+                with open(os.path.join(USER_DIR, "active_profile.json"), "w") as f:
+                    json.dump({"active_profile": profile_id}, f)
                 st.success(f"Profile '{profile_id}' created!")
                 st.session_state["active_profile"] = profile_id
                 st.rerun()
@@ -81,7 +86,7 @@ else:
     profile_name = st.session_state["active_profile"]
     st.title(f"Welcome, {profile_name.title()}")
 
-    st.subheader("📌 Resume Builder & Job Tools")
+    st.subheader("Resume Builder & Job Tools")
     menu_items = [
         ("Explore Jobs", "pages/1_Explore_Jobs.py"),
         ("Tailor Resume", "pages/3_Tailor_Resume.py"),

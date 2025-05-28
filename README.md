@@ -1,153 +1,113 @@
-# Job Dashboard + Resume Builder (Powered by MCP)
+# 📊 Job Dashboard + Resume Builder
 
-A modular Python project to supercharge your job search with automation and AI. This tool helps you:
-
-- ✅ Discover real-time job listings tailored to your role and location  
-- ✅ Build and export clean, ATS-optimized resumes from structured data  
-- ✅ Seamlessly integrate job search tools via a local FastAPI backend  
-- ✅ Maintain a portable, extensible, and Pythonic codebase  
-- ✅ Switch between multiple user profiles and Master Resumes
+An AI-powered job search assistant that helps you find jobs, build resumes, and tailor applications with one click — using local LLMs (Ollama) or OpenAI.
 
 ---
 
-## 🔐 New: User Profile System
+## 🔍 Features
 
-- Select or upload your profile on first launch
-- Each profile gets its own editable JSON and optional Master Resume CSV
-- All pages auto-load profile and resume data tied to the selected user
+### ✅ 1. Explore Jobs
+- Live job search powered by API (Adzuna, JSearch, etc.)
+- Filter by title, location, and source
+- Click a job to view full description and tailor your resume
 
----
+### ✅ 2. Build Resume (Guided Form)
+- Fully modular resume builder using Streamlit
+- Add jobs, projects, education, skills, and certifications
+- Upload an existing resume CSV to prefill the form
+- Download structured resume as CSV or PDF
 
-## 💼 Current Features
-
-### Explore Jobs
-- Browse categorized job listings (Data, ML, BI, Full-Stack, EdTech, etc.)
-- Filter by keyword, location (e.g. "Remote", "San Diego"), date, and API source
-- Fetch live results from **Adzuna** or **JSearch** (via FastAPI tool calls)
-
-### Create Resume
-- Build or upload your resume using a smart CSV-based form
-- Supports multiple jobs, projects, and certifications with grouped inputs
-- Autofill with your profile + Master Resume CSV
-- Fields persist after export (no reset on PDF download)
-- Outputs to CSV, JSON, and polished ATS-friendly PDF
-
-### Tailor Resume (Beta)
-- Paste a job description and generate a customized resume using OpenAI or Ollama
-- Still under active development for full job-to-resume matching
-- Choose between OpenAI or Ollama (local) for rewriting
-- Fully supports LLaMA 3 and other Ollama-hosted models
+### ✅ 3. Tailor Resume to Any Job
+- Paste a job description or click from the job search results
+- Select your master resume (or use the active profile’s version)
+- Instantly generate a tailored version using Ollama or OpenAI
+- All outputs follow ATS-optimized structure for CSV/PDF export
 
 ---
 
-## 🧠 Future Goals
+## 👤 Dynamic Profile System
 
-- **One-Click Cover Letter Generator**  
-  Click a job → output matching resume + AI-written cover letter
-
-- **Interview Assistant Q&A**  
-  "How should I answer this job's most likely questions?"
-
-- **Application Tracker**  
-  Track jobs applied to, export to CSV/Notion
-
-- **Unified Job + Resume Dashboard**  
-  One page to view jobs, tailor, and apply
+### 🧠 Profile-Aware Resume Tailoring
+- `users/active_profile.json` tracks which user is active
+- Automatically loads user data from `users/{name}.json`
+- Injects personal_info fields (name, email, phone, etc.) into tailored output
+- Supports multiple user profiles and switching via `0_Select_Profile.py`
 
 ---
 
-## 🛠️ Tech Stack
+## 💡 Tech Stack
 
-- **Streamlit** – frontend UI for dashboard and resume builder
-- **FastAPI** – local backend for job tools (MCP)
-- **ReportLab** – ATS-optimized PDF resume generation
-- **Pandas** – structured resume storage + export
-- **Requests** – API calls to Adzuna, JSearch, Ollama/OpenAI
-- **Ollama + LLaMA 3** – run local LLMs for resume rewriting without API cost
+- **Streamlit** — Front-end UI
+- **FastAPI** — Backend API server
+- **Ollama** (local LLM) or **OpenAI** (cloud)
+- **LangChain** — optional LLM agent support
+- **Pandas** / **ReportLab** — Resume PDF generation
+- **FAISS / HuggingFace / Gradio** — planned add-ons for cover letters & RAG
 
 ---
 
-## 📁 Project Structure (v0.5)
+## 📂 File Structure
 
 ```
 
 job-dashboard/
-├── 0\_Select\_Profile.py           # New entry point: choose or upload a user
-├── pages/
-│   ├── 1\_Explore\_Jobs.py         # Job listings dashboard
-│   ├── 2\_Create\_Resume.py        # Guided resume builder (form-based)
-│   └── 3\_Tailor\_Resume.py        # AI-based resume tailoring (OpenAI/Ollama)
-
-├── resume/
-│   └── generate\_pdf.py           # CSV → ATS PDF exporter
-
-├── modules/
-│   └── dashboard\_template.py     # Job card display logic
-
-├── utils/
-│   ├── data\_fetcher.py           # Calls FastAPI tools
-│   ├── rewrite\_utils.py          # Bullet/summary rewriting helpers
-│   └── profile\_loader.py         # Load/save profile JSONs
-
-├── mcp\_server/
-│   ├── server.py                 # FastAPI backend
-│   └── tools/fetch\_job\_postings.py
-
-├── users/
-│   └── \[name].json               # User profile
-│   └── \[name]\_master\_resume.csv  # (optional) full resume data
+│
+├── app.py                      # Main Streamlit entry
+├── mcp\_server/                # FastAPI backend tools
+│   ├── server.py
+│   └── tools/
+│   └── utils/
+│
+├── resume/                    # Resume CSVs + PDF generation
+│   ├── generate\_pdf.py
+│   ├── jtmarcu\_master\_resume.csv
+│
+├── users/                     # Dynamic user profiles
+│   ├── active\_profile.json
+│   ├── jonathan\_marcu.json
+│
+├── pages/                     # Streamlit pages
+│   ├── 0\_Select\_Profile.py
+│   ├── 1\_Explore\_Jobs.py
+│   ├── 2\_Create\_Resume.py
+│   └── 3\_Tailor\_Resume.py
 
 ````
 
 ---
 
-## ⚙️ Setup Instructions
+## 🧪 Coming Soon
 
-### 1. Clone the repo
+- 📝 One-click cover letter generation (Ollama or OpenAI)
+- 💾 Application tracking dashboard (with export)
+- 📌 Resume version history and tagging
+- 🔍 Smart job matching by role, skills, and keywords
+- 🧠 LLM interview prep and Q&A
+
+---
+
+## 🚀 Getting Started
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/job-dashboard.git
+# 1. Clone the repo
+git clone https://github.com/yourname/job-dashboard.git
 cd job-dashboard
+
+# 2. Install dependencies
+pip install -r requirements.txt
+
+# 3. Start the backend (FastAPI)
+uvicorn mcp_server.server:app --reload
+
+# 4. Start the Streamlit UI
+streamlit run app.py
 ````
 
-### 2. Create `.env` with your API keys
-
-```env
-MCP_SERVER_URL=http://localhost:8000
-ADZUNA_APP_ID=your_adzuna_app_id
-ADZUNA_APP_KEY=your_adzuna_app_key
-RAPIDAPI_KEY=your_jsearch_api_key
-```
-
-### 3. Install dependencies
-
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-### 4. Launch the dashboard
-
-```bash
-bash start_dashboard.sh
-# or on Windows
-start_dashboard.bat
-```
-
 ---
 
-## ✅ Completed Milestones (v0.5)
+## 📬 Feedback or Contributions
 
-* [x] User profiles with stored resume and profile info
-* [x] Real-time job dashboard with category + keyword filtering
-* [x] CSV-based guided resume builder with grouped inputs
-* [x] Full-form persistence using Streamlit `session_state`
-* [x] Clean PDF exports from form or uploaded data
-* [x] Modular, scalable FastAPI + Streamlit architecture
+Found a bug or want to improve the experience?
+Feel free to open an issue or PR. This project is actively evolving.
 
 ---
-
-## 📜 License
-
-MIT License
