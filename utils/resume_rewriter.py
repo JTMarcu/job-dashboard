@@ -43,6 +43,170 @@ def format_resume_rows(rows):
         for row in rows if row.get("section") and row.get("content")
     ]
 
+def normalize_ollama_blocks(raw_blocks):
+    """
+    Accepts parsed LLM output (list of dicts, possibly nested/lists).
+    Returns strict flat blocks as expected by your app (section,subsection,content).
+    """
+    flat_blocks = []
+    for block in raw_blocks:
+        section = block.get("section", "").strip().lower()
+        subsection = block.get("subsection")
+        content = block.get("content")
+
+        # Normalize section name
+        if section == "experience":
+            section = "professional_experience"
+        elif section == "certification":
+            section = "certifications"
+        elif section == "project":
+            section = "projects"
+
+        # --- Flatten professional_experience ---
+        if section == "professional_experience":
+            entries = []
+            if isinstance(subsection, list):
+                entries = subsection
+            elif isinstance(content, list):
+                entries = content
+            elif isinstance(subsection, dict):
+                entries = [subsection]
+            elif isinstance(content, dict):
+                entries = [content]
+            else:
+                if content and isinstance(content, str):
+                    entries = [{"title": subsection, "company": "", "dates": "", "responsibilities": [content]}]
+            for i, job in enumerate(entries):
+                header = "**{} | {} | {}**".format(
+                    job.get("title", ""),
+                    job.get("company", ""),
+                    " ".join(job.get("dates", [])) if isinstance(job.get("dates"), list) else job.get("dates", "")
+                )
+                bullets = job.get("responsibilities") or []
+                if isinstance(bullets, str): bullets = [bullets]
+                content_str = header
+                if bullets:
+                    content_str += "\n" + "\n".join(
+                        f"• {b.strip()}" if not b.strip().startswith("•") else b.strip() for b in bullets if b.strip()
+                    )
+                flat_blocks.append({
+                    "section": "professional_experience",
+                    "subsection": f"job_{i+1}",
+                    "content": content_str.strip()
+                })
+
+        # --- Flatten projects ---
+        elif section == "projects":
+            entries = []
+            if isinstance(subsection, list):
+                entries = subsection
+            elif isinstance(content, list):
+                entries = content
+            elif isinstance(subsection, dict):
+                entries = [subsection]
+            elif isinstance(content, dict):
+                entries = [content]
+            else:
+                if content and isinstance(content, str):
+                    entries = [{"title": subsection, "description": [content]}]
+            for i, proj in enumerate(entries):
+                header = "**{}**".format(proj.get("title", ""))
+                desc = proj.get("description", [])
+                if isinstance(desc, str): desc = [desc]
+                content_str = header
+                if desc:
+                    content_str += "\n" + "\n".join(
+                        f"• {d.strip()}" if not d.strip().startswith("•") else d.strip() for d in desc if d.strip()
+                    )
+                flat_blocks.append({
+                    "section": "projects",
+                    "subsection": f"proj_{i+1}",
+                    "content": content_str.strip()
+                })
+
+        # --- Flatten certifications ---
+        elif section == "certifications":
+            entries = []
+            if isinstance(subsection, list):
+                entries = subsection
+            elif isinstance(content, list):
+                entries = content
+            elif isinstance(subsection, dict):
+                entries = [subsection]
+            elif isinstance(content, dict):
+                entries = [content]
+            else:
+                if content and isinstance(content, str):
+                    entries = [{"name": content}]
+            for i, cert in enumerate(entries):
+                name = cert.get("name", "")
+                date = cert.get("date", "")
+                content_str = f"{name} | {date}".strip(" |")
+                flat_blocks.append({
+                    "section": "certifications",
+                    "subsection": f"cert_{i+1}",
+                    "content": content_str
+                })
+
+        # --- Flatten education ---
+        elif section == "education":
+            entries = []
+            if isinstance(subsection, list):
+                entries = subsection
+            elif isinstance(content, list):
+                entries = content
+            elif isinstance(subsection, dict):
+                entries = [subsection]
+            elif isinstance(content, dict):
+                entries = [content]
+            else:
+                if content and isinstance(content, str):
+                    entries = [{"degree": subsection, "school": "", "date": "", "highlights": [content]}]
+            for i, edu in enumerate(entries):
+                degree = edu.get("degree", "") or edu.get("title", "")
+                school = edu.get("school", "")
+                date = edu.get("date", "")
+                highlights = edu.get("highlights", [])
+                if isinstance(highlights, str):
+                    highlights = [highlights]
+                header = "**{} | {} | {}**".format(degree, school, date).strip(" |")
+                content_str = header
+                if highlights:
+                    content_str += "\n" + "\n".join(
+                        f"• {h.strip()}" if not h.strip().startswith("•") else h.strip() for h in highlights if h.strip()
+                    )
+                flat_blocks.append({
+                    "section": "education",
+                    "subsection": f"edu_{i+1}",
+                    "content": content_str.strip()
+                })
+
+        # --- Flatten technical_skills ---
+        elif section == "technical_skills":
+            if isinstance(content, list):
+                pipe = " | ".join([str(x).strip() for x in content if str(x).strip()])
+                flat_blocks.append({
+                    "section": "technical_skills",
+                    "subsection": subsection,
+                    "content": pipe
+                })
+            else:
+                flat_blocks.append({
+                    "section": "technical_skills",
+                    "subsection": subsection,
+                    "content": str(content).strip() if content else ""
+                })
+
+        # --- Flatten personal_info, professional_summary, etc. ---
+        else:
+            if subsection and isinstance(subsection, str):
+                flat_blocks.append({
+                    "section": section,
+                    "subsection": subsection,
+                    "content": str(content).strip() if content else ""
+                })
+    return flat_blocks
+
 def sanitize_resume_blocks(blocks, master_blocks):
     # Build a lookup for personal_info from master (except target_roles)
     master_personal = {
@@ -126,7 +290,9 @@ def parse_and_sanitize_output(raw_response, master_blocks):
         end = raw_response.rfind("]") + 1
         clean_json = raw_response[start:end].strip()
         parsed = json.loads(clean_json)
-        return sanitize_resume_blocks(parsed, master_blocks)
+        # Normalize the blocks!
+        normalized = normalize_ollama_blocks(parsed)
+        return sanitize_resume_blocks(normalized, master_blocks)
     except Exception as e:
         return [{"section": "error", "subsection": "parse_fail", "content": str(e)}]
 
