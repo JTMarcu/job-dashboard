@@ -50,7 +50,7 @@ if st.button("Tailor Resume", disabled=not job_description.strip()):
                 st.stop()
 
         # --- Python post-processing for strict resume rules ---
-        tailored_blocks = sanitize_resume_blocks(tailored_blocks)
+        tailored_blocks = sanitize_resume_blocks(tailored_blocks, resume_rows)
         df_tailored = pd.DataFrame([
             {
                 "section": b.get("section", "").strip(),
@@ -60,45 +60,6 @@ if st.button("Tailor Resume", disabled=not job_description.strip()):
             for b in tailored_blocks
             if b.get("section") and b.get("content")
         ])
-
-        # 1. Overwrite all personal_info fields EXCEPT target_roles with master resume values
-        personal_info_fields = [
-            "name", "location", "email", "phone", "linkedin", "github", "portfolio"
-        ]
-        for field in personal_info_fields:
-            val = df_master.loc[
-                (df_master["section"] == "personal_info") & (df_master["subsection"] == field),
-                "content"
-            ]
-            if not val.empty:
-                df_tailored.loc[
-                    (df_tailored["section"] == "personal_info") & (df_tailored["subsection"] == field),
-                    "content"
-                ] = val.values[0]
-
-        # 2. Exclude ATS Resume and Common Core Math projects
-        df_tailored = df_tailored[
-            ~(
-                (df_tailored["section"] == "projects") &
-                (df_tailored["content"].str.contains("ATS Resume|Common Core Math", case=False, na=False))
-            )
-        ]
-
-        # 3. Limit to 4 projects max (pick top 4 as given, since LLM should order by relevance)
-        proj_rows = df_tailored[df_tailored["section"] == "projects"]
-        if len(proj_rows) > 4:
-            others = df_tailored[df_tailored["section"] != "projects"]
-            df_tailored = pd.concat([others, proj_rows.head(4)], ignore_index=True)
-
-        # 4. Limit to 40 lines total (cut extras if needed, but always preserve personal_info)
-        pers_mask = df_tailored["section"] == "personal_info"
-        pers_info = df_tailored[pers_mask]
-        not_pers = df_tailored[~pers_mask]
-        if len(df_tailored) > 40:
-            # always keep all personal_info rows, then trim the rest
-            max_not_pers = 40 - len(pers_info)
-            not_pers = not_pers.head(max_not_pers)
-            df_tailored = pd.concat([pers_info, not_pers], ignore_index=True)
 
         # --- Show preview as table ---
         st.success("Tailored resume generated below! Review, then download or send to builder.")
