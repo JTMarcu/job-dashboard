@@ -44,10 +44,6 @@ def format_resume_rows(rows):
     ]
 
 def normalize_ollama_blocks(raw_blocks):
-    """
-    Accepts parsed LLM output (list of dicts, possibly nested/lists).
-    Returns strict flat blocks as expected by your app (section,subsection,content).
-    """
     flat_blocks = []
     for block in raw_blocks:
         section = block.get("section", "").strip().lower()
@@ -207,82 +203,129 @@ def normalize_ollama_blocks(raw_blocks):
                 })
     return flat_blocks
 
-def sanitize_resume_blocks(blocks, master_blocks):
-    # Build a lookup for personal_info from master (except target_roles)
-    master_personal = {
-        b["subsection"]: b["content"]
-        for b in master_blocks
-        if b.get("section") == "personal_info" and b.get("subsection") != "target_roles"
-    }
+def enforce_all_guidelines(normalized_blocks, master_blocks):
+    """
+    normalized_blocks: flat, normalized blocks from LLM
+    master_blocks: flat blocks from master resume
+    Returns: 40-line, 3-column list of dicts
+    """
+    def block_dict(blocks):
+        return {(b["section"], b["subsection"]): b["content"] for b in blocks}
 
-    # Only allow LLM to change target_roles; restore all other personal_info from master
-    cleaned = []
-    for b in blocks:
-        section = b.get("section", "")
-        subsection = b.get("subsection", "")
-        content = b.get("content", "")
+    master_lookup = block_dict(master_blocks)
+    llm_lookup = block_dict(normalized_blocks)
 
-        if section == "personal_info" and subsection != "target_roles":
-            # Force content from master resume
-            content = master_personal.get(subsection, "")
-        cleaned.append({
-            "section": section,
-            "subsection": subsection,
+    # Personal Info (fields, order, always from master except target_roles)
+    personal_info_order = ["name", "location", "email", "phone", "linkedin", "github", "portfolio", "target_roles"]
+    personal_info_blocks = []
+    for sub in personal_info_order:
+        if sub == "target_roles" and ("personal_info", "target_roles") in llm_lookup:
+            content = llm_lookup[("personal_info", "target_roles")]
+        else:
+            content = master_lookup.get(("personal_info", sub), "")
+        personal_info_blocks.append({
+            "section": "personal_info",
+            "subsection": sub,
             "content": content
         })
 
-    # Remove duplicates (keep first occurrence)
-    seen = set()
-    unique = []
-    for b in cleaned:
-        k = (b["section"], b["subsection"])
-        if k in seen:
+    # Professional Summary
+    summary = llm_lookup.get(("professional_summary", "summary"), master_lookup.get(("professional_summary", "summary"), ""))
+    summary_block = [{"section": "professional_summary", "subsection": "summary", "content": summary}]
+
+    # Technical Skills
+    skill_subsections = ["programming_languages", "libraries_frameworks", "tools_platforms", "other_skills"]
+    skill_blocks = []
+    for sub in skill_subsections:
+        content = llm_lookup.get(("technical_skills", sub), master_lookup.get(("technical_skills", sub), ""))
+        skill_blocks.append({"section": "technical_skills", "subsection": sub, "content": content})
+
+    # Professional Experience (always 3 jobs, 4/4/2 bullets)
+    llm_jobs = [b for b in normalized_blocks if b["section"] == "professional_experience"]
+    master_jobs = [b for b in master_blocks if b["section"] == "professional_experience"]
+    jobs = []
+    idx = 0
+    for b in llm_jobs + master_jobs:
+        if idx >= 3:
+            break
+        if b in jobs:
             continue
-        seen.add(k)
-        unique.append(b)
+        lines = [l for l in b["content"].split("\n") if l.strip()]
+        header = lines[0] if lines else ""
+        bullets = lines[1:]
+        if idx in [0,1]:
+            bullets = pad_bullets(bullets, 4)
+        else:
+            bullets = pad_bullets(bullets, 2)
+        jobs.append({
+            "section": "professional_experience",
+            "subsection": f"job_{idx+1}",
+            "content": "\n".join([header] + bullets)
+        })
+        idx += 1
+    while len(jobs) < 3:
+        jobs.append({
+            "section": "professional_experience",
+            "subsection": f"job_{len(jobs)+1}",
+            "content": ""
+        })
 
-    # -- Project section logic: just enforce 4 max, 2 bullets each
-    filtered = []
-    proj_count = 0
-    for b in unique:
-        if b["section"] == "projects":
-            if proj_count >= 4:
-                continue
-            # Ensure max 2 bullets
-            lines = [l for l in b["content"].split("\n") if l.strip()]
-            header = lines[0] if lines else ""
-            bullets = pad_bullets(lines[1:], 2)
-            b["content"] = "\n".join([header] + bullets)
-            proj_count += 1
-        filtered.append(b)
+    # Education (1 entry, LLM or master or blank)
+    llm_edus = [b for b in normalized_blocks if b["section"] == "education"]
+    master_edus = [b for b in master_blocks if b["section"] == "education"]
+    edu_blocks = []
+    if llm_edus:
+        edu_blocks.append(llm_edus[0])
+    elif master_edus:
+        edu_blocks.append(master_edus[0])
+    else:
+        edu_blocks.append({"section": "education", "subsection": "edu_1", "content": ""})
 
-    # --- Professional Experience bullets logic ---
-    # 1st and 2nd jobs: 4 bullets. 3rd job: 2 bullets. All others: 2 bullets.
-    final = []
-    exp_count = 0
-    for b in filtered:
-        if b["section"] == "professional_experience":
-            exp_count += 1
-            lines = [l for l in b["content"].split("\n") if l.strip()]
-            header = lines[0] if lines else ""
-            bullets = lines[1:]
-            if exp_count == 3:
-                bullets = pad_bullets(bullets, 2)
-            elif exp_count in [1, 2]:
-                bullets = pad_bullets(bullets, 4)
-            else:
-                bullets = pad_bullets(bullets, 2)
-            b["content"] = "\n".join([header] + bullets)
-        final.append(b)
+    # Certifications (up to 3, fill or pad)
+    llm_certs = [b for b in normalized_blocks if b["section"] == "certifications"]
+    master_certs = [b for b in master_blocks if b["section"] == "certifications"]
+    cert_blocks = []
+    for b in (llm_certs or master_certs)[:3]:
+        cert_blocks.append(b)
+    while len(cert_blocks) < 3:
+        cert_blocks.append({"section": "certifications", "subsection": f"cert_{len(cert_blocks)+1}", "content": ""})
 
-    # Trim to 40 lines (keep all personal_info rows)
-    pers_info = [b for b in final if b["section"] == "personal_info"]
-    not_pers = [b for b in final if b["section"] != "personal_info"]
-    if len(pers_info) + len(not_pers) > 40:
-        not_pers = not_pers[:(40 - len(pers_info))]
-    final = pers_info + not_pers
+    # Projects (4, 2 bullets each)
+    llm_projects = [b for b in normalized_blocks if b["section"] == "projects"]
+    master_projects = [b for b in master_blocks if b["section"] == "projects"]
+    proj_blocks = []
+    idx = 0
+    for b in llm_projects + master_projects:
+        if idx >= 4:
+            break
+        lines = [l for l in b["content"].split("\n") if l.strip()]
+        header = lines[0] if lines else ""
+        bullets = lines[1:]
+        bullets = pad_bullets(bullets, 2)
+        proj_blocks.append({
+            "section": "projects",
+            "subsection": f"proj_{idx+1}",
+            "content": "\n".join([header] + bullets)
+        })
+        idx += 1
+    while len(proj_blocks) < 4:
+        proj_blocks.append({"section": "projects", "subsection": f"proj_{len(proj_blocks)+1}", "content": ""})
 
-    return final
+    # Strict order and 40 lines
+    output_blocks = (
+        personal_info_blocks +
+        summary_block +
+        skill_blocks +
+        jobs +
+        edu_blocks +
+        cert_blocks +
+        proj_blocks
+    )
+    while len(output_blocks) < 40:
+        output_blocks.append({"section": "", "subsection": "", "content": ""})
+    output_blocks = output_blocks[:40]
+
+    return output_blocks
 
 def parse_and_sanitize_output(raw_response, master_blocks):
     try:
@@ -290,9 +333,8 @@ def parse_and_sanitize_output(raw_response, master_blocks):
         end = raw_response.rfind("]") + 1
         clean_json = raw_response[start:end].strip()
         parsed = json.loads(clean_json)
-        # Normalize the blocks!
         normalized = normalize_ollama_blocks(parsed)
-        return sanitize_resume_blocks(normalized, master_blocks)
+        return enforce_all_guidelines(normalized, master_blocks)
     except Exception as e:
         return [{"section": "error", "subsection": "parse_fail", "content": str(e)}]
 

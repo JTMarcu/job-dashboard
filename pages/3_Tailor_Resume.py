@@ -4,7 +4,7 @@ import streamlit as st
 import pandas as pd
 import os
 from utils.profile_loader import load_user_profile
-from utils.resume_rewriter import full_resume_rewriter, sanitize_resume_blocks
+from utils.resume_rewriter import full_resume_rewriter, enforce_all_guidelines
 
 st.set_page_config(page_title="Tailor Resume to Job", layout="wide")
 st.title("Tailor Your Resume for Any Job")
@@ -49,8 +49,8 @@ if st.button("Tailor Resume", disabled=not job_description.strip()):
                 st.error("LLM output parse error. Try again or check server logs.")
                 st.stop()
 
-        # --- Python post-processing for strict resume rules ---
-        tailored_blocks = sanitize_resume_blocks(tailored_blocks, resume_rows)
+        # --- Enforce ALL guidelines and rules after LLM ---
+        tailored_blocks = enforce_all_guidelines(tailored_blocks, resume_rows)
         df_tailored = pd.DataFrame([
             {
                 "section": b.get("section", "").strip(),
@@ -58,7 +58,7 @@ if st.button("Tailor Resume", disabled=not job_description.strip()):
                 "content": b.get("content", "").strip(),
             }
             for b in tailored_blocks
-            if b.get("section") and b.get("content")
+            if b.get("section") is not None and b.get("content") is not None
         ])
 
         # --- Show preview as table ---
