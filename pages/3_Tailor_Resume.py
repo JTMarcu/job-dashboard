@@ -3,66 +3,122 @@
 import streamlit as st
 import pandas as pd
 import os
-import csv
-import ast
-import json
-from utils.data_fetcher import call_mcp_tool
 from utils.profile_loader import load_user_profile
+from utils.resume_rewriter import full_resume_rewriter, sanitize_resume_blocks
 
-st.set_page_config(page_title="Tailor Resume", layout="wide")
-st.title("Tailor Resume")
+st.set_page_config(page_title="Tailor Resume to Job", layout="wide")
+st.title("Tailor Your Resume for Any Job")
 
+# --- Load active profile and master resume ---
 if "active_profile" not in st.session_state:
     st.warning("Please select a user profile before continuing.")
     st.stop()
 
 profile_name = st.session_state["active_profile"]
-profile_data = load_user_profile(profile_name)
-master_resume_path = os.path.join("users", f"{profile_name}_master_resume.csv")
+profile = load_user_profile(f"users/{profile_name}.json")
+master_resume_path = f"users/{profile_name}_master_resume.csv"
 
-uploaded = st.file_uploader("Upload your resume (CSV)", type=["csv"], key="resume_upload")
-
-if os.path.exists(master_resume_path):
-    if st.button("Use Master Resume"):
-        st.session_state["resume_df"] = pd.read_csv(master_resume_path, quoting=csv.QUOTE_MINIMAL)
-        st.success("Loaded Master Resume.")
-
-if uploaded:
-    st.session_state["resume_df"] = pd.read_csv(uploaded, quoting=csv.QUOTE_MINIMAL)
-    st.success("Uploaded Resume Loaded.")
-
-# Check for stored resume
-if "resume_df" not in st.session_state:
-    st.info("Please upload a resume CSV or use your Master Resume to get started.")
+if not os.path.exists(master_resume_path):
+    st.error(f"Master resume not found for {profile_name}. Please upload it first in the profile page.")
     st.stop()
 
-resume_df = st.session_state["resume_df"]
-resume_rows = resume_df.to_dict(orient="records")
+# --- UI: Paste job description ---
+st.subheader("Step 1: Paste the Job Description")
+job_description = st.text_area(
+    "Paste the full job description below:",
+    height=280,
+    placeholder="Paste job posting or requirements here..."
+)
 
-st.subheader("Paste Job Description")
-job_desc = st.text_area("Job Description", height=300)
+# --- Tailor Resume Button ---
+st.subheader("Step 2: Generate Tailored Resume")
+if st.button("Tailor Resume", disabled=not job_description.strip()):
+    with st.spinner("Tailoring your resume to match the job..."):
 
-engine = st.radio("Choose model engine:", ["ollama", "openai"], index=0, horizontal=True)
+        # Load master resume as list of dict blocks
+        df_master = pd.read_csv(master_resume_path)
+        resume_rows = df_master.to_dict(orient="records")
 
-if st.button("Rewrite Entire Resume") and job_desc.strip():
-    tool_name = "full_resume_rewriter_openai" if engine == "openai" else "full_resume_rewriter"
-    with st.spinner(f"Rewriting resume with {engine.upper()}..."):
-        response = call_mcp_tool(tool_name, {
-            "job_description": job_desc,
-            "resume_rows": resume_rows
-        })
+        # --- Call Llama3 (Ollama) to tailor resume ---
+        result = full_resume_rewriter(job_description, resume_rows)
+        tailored_blocks = result.get("rewritten_blocks", None)
+        if isinstance(tailored_blocks, str):
+            try:
+                tailored_blocks = eval(tailored_blocks)
+            except Exception:
+                st.error("LLM output parse error. Try again or check server logs.")
+                st.stop()
 
-    if "error" in response:
-        st.error(response["error"])
-    elif "rewritten_blocks" in response:
-        rewritten_output = response["rewritten_blocks"]
-        st.success("Resume rewritten successfully.")
-        st.code(rewritten_output, language="json")
+        # --- Python post-processing for strict resume rules ---
+        tailored_blocks = sanitize_resume_blocks(tailored_blocks)
+        df_tailored = pd.DataFrame([
+            {
+                "section": b.get("section", "").strip(),
+                "subsection": b.get("subsection", "").strip(),
+                "content": b.get("content", "").strip(),
+            }
+            for b in tailored_blocks
+            if b.get("section") and b.get("content")
+        ])
 
-        try:
-            parsed = ast.literal_eval(rewritten_output)
-            parsed_df = pd.DataFrame(parsed)
-            st.download_button("Download Rewritten CSV", parsed_df.to_csv(index=False).encode("utf-8"), file_name="rewritten_resume.csv")
-        except Exception as e:
-            st.warning("Could not parse response to CSV format. You may copy manually or refine your prompt.")
-            st.text_area("Raw Output", rewritten_output, height=300)
+        # 1. Overwrite all personal_info fields EXCEPT target_roles with master resume values
+        personal_info_fields = [
+            "name", "location", "email", "phone", "linkedin", "github", "portfolio"
+        ]
+        for field in personal_info_fields:
+            val = df_master.loc[
+                (df_master["section"] == "personal_info") & (df_master["subsection"] == field),
+                "content"
+            ]
+            if not val.empty:
+                df_tailored.loc[
+                    (df_tailored["section"] == "personal_info") & (df_tailored["subsection"] == field),
+                    "content"
+                ] = val.values[0]
+
+        # 2. Exclude ATS Resume and Common Core Math projects
+        df_tailored = df_tailored[
+            ~(
+                (df_tailored["section"] == "projects") &
+                (df_tailored["content"].str.contains("ATS Resume|Common Core Math", case=False, na=False))
+            )
+        ]
+
+        # 3. Limit to 4 projects max (pick top 4 as given, since LLM should order by relevance)
+        proj_rows = df_tailored[df_tailored["section"] == "projects"]
+        if len(proj_rows) > 4:
+            others = df_tailored[df_tailored["section"] != "projects"]
+            df_tailored = pd.concat([others, proj_rows.head(4)], ignore_index=True)
+
+        # 4. Limit to 40 lines total (cut extras if needed, but always preserve personal_info)
+        pers_mask = df_tailored["section"] == "personal_info"
+        pers_info = df_tailored[pers_mask]
+        not_pers = df_tailored[~pers_mask]
+        if len(df_tailored) > 40:
+            # always keep all personal_info rows, then trim the rest
+            max_not_pers = 40 - len(pers_info)
+            not_pers = not_pers.head(max_not_pers)
+            df_tailored = pd.concat([pers_info, not_pers], ignore_index=True)
+
+        # --- Show preview as table ---
+        st.success("Tailored resume generated below! Review, then download or send to builder.")
+        st.dataframe(df_tailored, use_container_width=True, hide_index=True)
+
+        # --- Download CSV and send to 2_Create_Resume.py ---
+        st.download_button(
+            "⬇️ Download Tailored CSV",
+            df_tailored.to_csv(index=False),
+            file_name="tailored_resume.csv"
+        )
+
+        # Set session state so user can continue in 2_Create_Resume.py
+        st.session_state["df_master"] = df_tailored.copy()
+        st.markdown(
+            """
+            ### Next Step:
+            [Go to Resume Builder](2_Create_Resume.py) to edit or export your tailored resume as PDF!
+            """
+        )
+
+else:
+    st.info("Paste a job description and click **Tailor Resume** to generate your tailored resume.")
