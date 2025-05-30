@@ -20,7 +20,7 @@ def run_ollama(prompt):
     return res.json().get("response", "").strip()
 
 def pad_bullets(lines, limit):
-    lines = [l.strip() for l in lines if l.strip()]
+    lines = [safe_str(l).strip() for l in lines if safe_str(l).strip()]
     lines = [f"• {l}" if not l.startswith("•") else l for l in lines]
     sample_phrases = [
         "Demonstrated adaptability in fast-paced environments",
@@ -36,21 +36,31 @@ def pad_bullets(lines, limit):
 def format_resume_rows(rows):
     return [
         {
-            "section": row.get("section", "").strip(),
-            "subsection": row.get("subsection", "").strip(),
-            "content": row.get("content", "").strip()
+            "section": safe_str(row.get("section", "")).strip(),
+            "subsection": safe_str(row.get("subsection", "")).strip(),
+            "content": safe_str(row.get("content", "")).strip()
         }
-        for row in rows if row.get("section") and row.get("content")
+        for row in rows if safe_str(row.get("section")) and safe_str(row.get("content"))
     ]
+
+def safe_str(x):
+    if x is None:
+        return ""
+    try:
+        import pandas as pd
+        if isinstance(x, float) and pd.isna(x):
+            return ""
+    except Exception:
+        pass
+    return str(x)
 
 def normalize_ollama_blocks(raw_blocks):
     flat_blocks = []
     for block in raw_blocks:
-        section = block.get("section", "").strip().lower()
+        section = safe_str(block.get("section", "")).strip().lower()
         subsection = block.get("subsection")
         content = block.get("content")
 
-        # Normalize section name
         if section == "experience":
             section = "professional_experience"
         elif section == "certification":
@@ -58,7 +68,6 @@ def normalize_ollama_blocks(raw_blocks):
         elif section == "project":
             section = "projects"
 
-        # --- Flatten professional_experience ---
         if section == "professional_experience":
             entries = []
             if isinstance(subsection, list):
@@ -74,24 +83,23 @@ def normalize_ollama_blocks(raw_blocks):
                     entries = [{"title": subsection, "company": "", "dates": "", "responsibilities": [content]}]
             for i, job in enumerate(entries):
                 header = "**{} | {} | {}**".format(
-                    job.get("title", ""),
-                    job.get("company", ""),
-                    " ".join(job.get("dates", [])) if isinstance(job.get("dates"), list) else job.get("dates", "")
+                    safe_str(job.get("title", "")),
+                    safe_str(job.get("company", "")),
+                    " ".join(job.get("dates", [])) if isinstance(job.get("dates"), list) else safe_str(job.get("dates", ""))
                 )
                 bullets = job.get("responsibilities") or []
                 if isinstance(bullets, str): bullets = [bullets]
                 content_str = header
                 if bullets:
                     content_str += "\n" + "\n".join(
-                        f"• {b.strip()}" if not b.strip().startswith("•") else b.strip() for b in bullets if b.strip()
+                        f"• {safe_str(b).strip()}" if not safe_str(b).strip().startswith("•") else safe_str(b).strip() for b in bullets if safe_str(b).strip()
                     )
                 flat_blocks.append({
                     "section": "professional_experience",
                     "subsection": f"job_{i+1}",
-                    "content": content_str.strip()
+                    "content": safe_str(content_str.strip())
                 })
 
-        # --- Flatten projects ---
         elif section == "projects":
             entries = []
             if isinstance(subsection, list):
@@ -106,21 +114,20 @@ def normalize_ollama_blocks(raw_blocks):
                 if content and isinstance(content, str):
                     entries = [{"title": subsection, "description": [content]}]
             for i, proj in enumerate(entries):
-                header = "**{}**".format(proj.get("title", ""))
+                header = "**{}**".format(safe_str(proj.get("title", "")))
                 desc = proj.get("description", [])
                 if isinstance(desc, str): desc = [desc]
                 content_str = header
                 if desc:
                     content_str += "\n" + "\n".join(
-                        f"• {d.strip()}" if not d.strip().startswith("•") else d.strip() for d in desc if d.strip()
+                        f"• {safe_str(d).strip()}" if not safe_str(d).strip().startswith("•") else safe_str(d).strip() for d in desc if safe_str(d).strip()
                     )
                 flat_blocks.append({
                     "section": "projects",
                     "subsection": f"proj_{i+1}",
-                    "content": content_str.strip()
+                    "content": safe_str(content_str.strip())
                 })
 
-        # --- Flatten certifications ---
         elif section == "certifications":
             entries = []
             if isinstance(subsection, list):
@@ -135,16 +142,15 @@ def normalize_ollama_blocks(raw_blocks):
                 if content and isinstance(content, str):
                     entries = [{"name": content}]
             for i, cert in enumerate(entries):
-                name = cert.get("name", "")
-                date = cert.get("date", "")
+                name = safe_str(cert.get("name", ""))
+                date = safe_str(cert.get("date", ""))
                 content_str = f"{name} | {date}".strip(" |")
                 flat_blocks.append({
                     "section": "certifications",
                     "subsection": f"cert_{i+1}",
-                    "content": content_str
+                    "content": safe_str(content_str)
                 })
 
-        # --- Flatten education ---
         elif section == "education":
             entries = []
             if isinstance(subsection, list):
@@ -159,9 +165,9 @@ def normalize_ollama_blocks(raw_blocks):
                 if content and isinstance(content, str):
                     entries = [{"degree": subsection, "school": "", "date": "", "highlights": [content]}]
             for i, edu in enumerate(entries):
-                degree = edu.get("degree", "") or edu.get("title", "")
-                school = edu.get("school", "")
-                date = edu.get("date", "")
+                degree = safe_str(edu.get("degree", "")) or safe_str(edu.get("title", ""))
+                school = safe_str(edu.get("school", ""))
+                date = safe_str(edu.get("date", ""))
                 highlights = edu.get("highlights", [])
                 if isinstance(highlights, str):
                     highlights = [highlights]
@@ -169,78 +175,67 @@ def normalize_ollama_blocks(raw_blocks):
                 content_str = header
                 if highlights:
                     content_str += "\n" + "\n".join(
-                        f"• {h.strip()}" if not h.strip().startswith("•") else h.strip() for h in highlights if h.strip()
+                        f"• {safe_str(h).strip()}" if not safe_str(h).strip().startswith("•") else safe_str(h).strip() for h in highlights if safe_str(h).strip()
                     )
                 flat_blocks.append({
                     "section": "education",
                     "subsection": f"edu_{i+1}",
-                    "content": content_str.strip()
+                    "content": safe_str(content_str.strip())
                 })
 
-        # --- Flatten technical_skills ---
         elif section == "technical_skills":
             if isinstance(content, list):
-                pipe = " | ".join([str(x).strip() for x in content if str(x).strip()])
+                pipe = " | ".join([safe_str(x).strip() for x in content if safe_str(x).strip()])
                 flat_blocks.append({
                     "section": "technical_skills",
-                    "subsection": subsection,
-                    "content": pipe
+                    "subsection": safe_str(subsection),
+                    "content": safe_str(pipe)
                 })
             else:
                 flat_blocks.append({
                     "section": "technical_skills",
-                    "subsection": subsection,
-                    "content": str(content).strip() if content else ""
+                    "subsection": safe_str(subsection),
+                    "content": safe_str(content).strip() if content else ""
                 })
 
-        # --- Flatten personal_info, professional_summary, etc. ---
         else:
             if subsection and isinstance(subsection, str):
                 flat_blocks.append({
-                    "section": section,
-                    "subsection": subsection,
-                    "content": str(content).strip() if content else ""
+                    "section": safe_str(section),
+                    "subsection": safe_str(subsection),
+                    "content": safe_str(content).strip() if content else ""
                 })
     return flat_blocks
 
 def enforce_all_guidelines(normalized_blocks, master_blocks):
-    """
-    normalized_blocks: flat, normalized blocks from LLM
-    master_blocks: flat blocks from master resume
-    Returns: 40-line, 3-column list of dicts, always fully string and valid for 2_Create_Resume.py
-    """
     def block_dict(blocks):
-        return {(str(b.get("section", "")), str(b.get("subsection", ""))): str(b.get("content", "")) for b in blocks}
+        return {(safe_str(b.get("section", "")), safe_str(b.get("subsection", ""))): safe_str(b.get("content", "")) for b in blocks}
 
     master_lookup = block_dict(master_blocks)
     llm_lookup = block_dict(normalized_blocks)
 
-    # Personal Info (fields, order, always from master except target_roles)
     personal_info_order = ["name", "location", "email", "phone", "linkedin", "github", "portfolio", "target_roles"]
     personal_info_blocks = []
     for sub in personal_info_order:
         if sub == "target_roles" and ("personal_info", "target_roles") in llm_lookup:
-            content = str(llm_lookup[("personal_info", "target_roles")])
+            content = safe_str(llm_lookup[("personal_info", "target_roles")])
         else:
-            content = str(master_lookup.get(("personal_info", sub), ""))
+            content = safe_str(master_lookup.get(("personal_info", sub), ""))
         personal_info_blocks.append({
             "section": "personal_info",
             "subsection": sub,
             "content": content
         })
 
-    # Professional Summary
-    summary = str(llm_lookup.get(("professional_summary", "summary"), master_lookup.get(("professional_summary", "summary"), "")))
+    summary = safe_str(llm_lookup.get(("professional_summary", "summary"), master_lookup.get(("professional_summary", "summary"), "")))
     summary_block = [{"section": "professional_summary", "subsection": "summary", "content": summary}]
 
-    # Technical Skills
     skill_subsections = ["programming_languages", "libraries_frameworks", "tools_platforms", "other_skills"]
     skill_blocks = []
     for sub in skill_subsections:
-        content = str(llm_lookup.get(("technical_skills", sub), master_lookup.get(("technical_skills", sub), "")))
+        content = safe_str(llm_lookup.get(("technical_skills", sub), master_lookup.get(("technical_skills", sub), "")))
         skill_blocks.append({"section": "technical_skills", "subsection": sub, "content": content})
 
-    # Professional Experience (always 3 jobs, 4/4/2 bullets)
     llm_jobs = [b for b in normalized_blocks if b["section"] == "professional_experience"]
     master_jobs = [b for b in master_blocks if b["section"] == "professional_experience"]
     jobs = []
@@ -250,7 +245,7 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             break
         if b in jobs:
             continue
-        lines = [str(l) for l in str(b.get("content", "")).split("\n") if str(l).strip()]
+        lines = [safe_str(l) for l in safe_str(b.get("content", "")).split("\n") if safe_str(l).strip()]
         header = lines[0] if lines else ""
         bullets = lines[1:]
         if idx in [0, 1]:
@@ -270,7 +265,6 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             "content": ""
         })
 
-    # Education (1 entry, LLM or master or blank, but always string)
     llm_edus = [b for b in normalized_blocks if b["section"] == "education"]
     master_edus = [b for b in master_blocks if b["section"] == "education"]
     edu_blocks = []
@@ -278,33 +272,31 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
         edu = llm_edus[0]
         edu_blocks.append({
             "section": "education",
-            "subsection": str(edu.get("subsection", "edu_1")),
-            "content": str(edu.get("content", ""))
+            "subsection": safe_str(edu.get("subsection", "edu_1")),
+            "content": safe_str(edu.get("content", ""))
         })
     elif master_edus:
         edu = master_edus[0]
         edu_blocks.append({
             "section": "education",
-            "subsection": str(edu.get("subsection", "edu_1")),
-            "content": str(edu.get("content", ""))
+            "subsection": safe_str(edu.get("subsection", "edu_1")),
+            "content": safe_str(edu.get("content", ""))
         })
     else:
         edu_blocks.append({"section": "education", "subsection": "edu_1", "content": ""})
 
-    # Certifications (up to 3, fill or pad)
     llm_certs = [b for b in normalized_blocks if b["section"] == "certifications"]
     master_certs = [b for b in master_blocks if b["section"] == "certifications"]
     cert_blocks = []
     for b in (llm_certs or master_certs)[:3]:
         cert_blocks.append({
             "section": "certifications",
-            "subsection": str(b.get("subsection", f"cert_{len(cert_blocks)+1}")),
-            "content": str(b.get("content", ""))
+            "subsection": safe_str(b.get("subsection", f"cert_{len(cert_blocks)+1}")),
+            "content": safe_str(b.get("content", ""))
         })
     while len(cert_blocks) < 3:
         cert_blocks.append({"section": "certifications", "subsection": f"cert_{len(cert_blocks)+1}", "content": ""})
 
-    # Projects (4, 2 bullets each)
     llm_projects = [b for b in normalized_blocks if b["section"] == "projects"]
     master_projects = [b for b in master_blocks if b["section"] == "projects"]
     proj_blocks = []
@@ -312,7 +304,7 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     for b in llm_projects + master_projects:
         if idx >= 4:
             break
-        lines = [str(l) for l in str(b.get("content", "")).split("\n") if str(l).strip()]
+        lines = [safe_str(l) for l in safe_str(b.get("content", "")).split("\n") if safe_str(l).strip()]
         header = lines[0] if lines else ""
         bullets = lines[1:]
         bullets = pad_bullets(bullets, 2)
@@ -325,7 +317,6 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     while len(proj_blocks) < 4:
         proj_blocks.append({"section": "projects", "subsection": f"proj_{len(proj_blocks)+1}", "content": ""})
 
-    # Strict order, all fields string, no trailing blank lines
     output_blocks = (
         personal_info_blocks +
         summary_block +
@@ -336,17 +327,21 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
         proj_blocks
     )
 
-    # Clean up: ensure all fields are str and remove trailing empty rows
+    # Remove duplicate target_roles and ensure all values are strings
+    target_roles_found = False
     final_blocks = []
     for b in output_blocks[:40]:
-        s = str(b.get("section", "") or "")
-        sub = str(b.get("subsection", "") or "")
-        c = str(b.get("content", "") or "")
+        s = safe_str(b.get("section", ""))
+        sub = safe_str(b.get("subsection", ""))
+        c = safe_str(b.get("content", ""))
+        if s == "personal_info" and sub == "target_roles":
+            if target_roles_found:
+                continue
+            target_roles_found = True
         final_blocks.append({"section": s, "subsection": sub, "content": c})
-    # Remove trailing empty lines (all three fields blank)
+    # Remove trailing lines where all fields are blank
     while final_blocks and all(v == "" for v in final_blocks[-1].values()):
         final_blocks.pop()
-
     return final_blocks
 
 def parse_and_sanitize_output(raw_response, master_blocks):
@@ -358,7 +353,7 @@ def parse_and_sanitize_output(raw_response, master_blocks):
         normalized = normalize_ollama_blocks(parsed)
         return enforce_all_guidelines(normalized, master_blocks)
     except Exception as e:
-        return [{"section": "error", "subsection": "parse_fail", "content": str(e)}]
+        return [{"section": "error", "subsection": "parse_fail", "content": safe_str(e)}]
 
 def full_resume_rewriter(job_description, resume_rows):
     resume_blocks = format_resume_rows(resume_rows)
