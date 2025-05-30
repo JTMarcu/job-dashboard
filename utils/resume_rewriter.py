@@ -207,10 +207,10 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     """
     normalized_blocks: flat, normalized blocks from LLM
     master_blocks: flat blocks from master resume
-    Returns: 40-line, 3-column list of dicts
+    Returns: 40-line, 3-column list of dicts, always fully string and valid for 2_Create_Resume.py
     """
     def block_dict(blocks):
-        return {(b["section"], b["subsection"]): b["content"] for b in blocks}
+        return {(str(b.get("section", "")), str(b.get("subsection", ""))): str(b.get("content", "")) for b in blocks}
 
     master_lookup = block_dict(master_blocks)
     llm_lookup = block_dict(normalized_blocks)
@@ -220,9 +220,9 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     personal_info_blocks = []
     for sub in personal_info_order:
         if sub == "target_roles" and ("personal_info", "target_roles") in llm_lookup:
-            content = llm_lookup[("personal_info", "target_roles")]
+            content = str(llm_lookup[("personal_info", "target_roles")])
         else:
-            content = master_lookup.get(("personal_info", sub), "")
+            content = str(master_lookup.get(("personal_info", sub), ""))
         personal_info_blocks.append({
             "section": "personal_info",
             "subsection": sub,
@@ -230,14 +230,14 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
         })
 
     # Professional Summary
-    summary = llm_lookup.get(("professional_summary", "summary"), master_lookup.get(("professional_summary", "summary"), ""))
+    summary = str(llm_lookup.get(("professional_summary", "summary"), master_lookup.get(("professional_summary", "summary"), "")))
     summary_block = [{"section": "professional_summary", "subsection": "summary", "content": summary}]
 
     # Technical Skills
     skill_subsections = ["programming_languages", "libraries_frameworks", "tools_platforms", "other_skills"]
     skill_blocks = []
     for sub in skill_subsections:
-        content = llm_lookup.get(("technical_skills", sub), master_lookup.get(("technical_skills", sub), ""))
+        content = str(llm_lookup.get(("technical_skills", sub), master_lookup.get(("technical_skills", sub), "")))
         skill_blocks.append({"section": "technical_skills", "subsection": sub, "content": content})
 
     # Professional Experience (always 3 jobs, 4/4/2 bullets)
@@ -250,10 +250,10 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             break
         if b in jobs:
             continue
-        lines = [l for l in b["content"].split("\n") if l.strip()]
+        lines = [str(l) for l in str(b.get("content", "")).split("\n") if str(l).strip()]
         header = lines[0] if lines else ""
         bullets = lines[1:]
-        if idx in [0,1]:
+        if idx in [0, 1]:
             bullets = pad_bullets(bullets, 4)
         else:
             bullets = pad_bullets(bullets, 2)
@@ -270,14 +270,24 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             "content": ""
         })
 
-    # Education (1 entry, LLM or master or blank)
+    # Education (1 entry, LLM or master or blank, but always string)
     llm_edus = [b for b in normalized_blocks if b["section"] == "education"]
     master_edus = [b for b in master_blocks if b["section"] == "education"]
     edu_blocks = []
     if llm_edus:
-        edu_blocks.append(llm_edus[0])
+        edu = llm_edus[0]
+        edu_blocks.append({
+            "section": "education",
+            "subsection": str(edu.get("subsection", "edu_1")),
+            "content": str(edu.get("content", ""))
+        })
     elif master_edus:
-        edu_blocks.append(master_edus[0])
+        edu = master_edus[0]
+        edu_blocks.append({
+            "section": "education",
+            "subsection": str(edu.get("subsection", "edu_1")),
+            "content": str(edu.get("content", ""))
+        })
     else:
         edu_blocks.append({"section": "education", "subsection": "edu_1", "content": ""})
 
@@ -286,7 +296,11 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     master_certs = [b for b in master_blocks if b["section"] == "certifications"]
     cert_blocks = []
     for b in (llm_certs or master_certs)[:3]:
-        cert_blocks.append(b)
+        cert_blocks.append({
+            "section": "certifications",
+            "subsection": str(b.get("subsection", f"cert_{len(cert_blocks)+1}")),
+            "content": str(b.get("content", ""))
+        })
     while len(cert_blocks) < 3:
         cert_blocks.append({"section": "certifications", "subsection": f"cert_{len(cert_blocks)+1}", "content": ""})
 
@@ -298,7 +312,7 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     for b in llm_projects + master_projects:
         if idx >= 4:
             break
-        lines = [l for l in b["content"].split("\n") if l.strip()]
+        lines = [str(l) for l in str(b.get("content", "")).split("\n") if str(l).strip()]
         header = lines[0] if lines else ""
         bullets = lines[1:]
         bullets = pad_bullets(bullets, 2)
@@ -311,7 +325,7 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
     while len(proj_blocks) < 4:
         proj_blocks.append({"section": "projects", "subsection": f"proj_{len(proj_blocks)+1}", "content": ""})
 
-    # Strict order and 40 lines
+    # Strict order, all fields string, no trailing blank lines
     output_blocks = (
         personal_info_blocks +
         summary_block +
@@ -321,11 +335,19 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
         cert_blocks +
         proj_blocks
     )
-    while len(output_blocks) < 40:
-        output_blocks.append({"section": "", "subsection": "", "content": ""})
-    output_blocks = output_blocks[:40]
 
-    return output_blocks
+    # Clean up: ensure all fields are str and remove trailing empty rows
+    final_blocks = []
+    for b in output_blocks[:40]:
+        s = str(b.get("section", "") or "")
+        sub = str(b.get("subsection", "") or "")
+        c = str(b.get("content", "") or "")
+        final_blocks.append({"section": s, "subsection": sub, "content": c})
+    # Remove trailing empty lines (all three fields blank)
+    while final_blocks and all(v == "" for v in final_blocks[-1].values()):
+        final_blocks.pop()
+
+    return final_blocks
 
 def parse_and_sanitize_output(raw_response, master_blocks):
     try:
