@@ -265,8 +265,9 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             "content": ""
         })
 
-    llm_edus = [b for b in normalized_blocks if b["section"] == "education"]
-    master_edus = [b for b in master_blocks if b["section"] == "education"]
+    # Education: include only if present in LLM or master and has content
+    llm_edus = [b for b in normalized_blocks if b["section"] == "education" and safe_str(b.get("content", "")).strip()]
+    master_edus = [b for b in master_blocks if b["section"] == "education" and safe_str(b.get("content", "")).strip()]
     edu_blocks = []
     if llm_edus:
         edu = llm_edus[0]
@@ -282,11 +283,11 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             "subsection": safe_str(edu.get("subsection", "edu_1")),
             "content": safe_str(edu.get("content", ""))
         })
-    else:
-        edu_blocks.append({"section": "education", "subsection": "edu_1", "content": ""})
+    # else: skip edu_blocks (no blank row!)
 
-    llm_certs = [b for b in normalized_blocks if b["section"] == "certifications"]
-    master_certs = [b for b in master_blocks if b["section"] == "certifications"]
+    # Certifications: same logic as education
+    llm_certs = [b for b in normalized_blocks if b["section"] == "certifications" and safe_str(b.get("content", "")).strip()]
+    master_certs = [b for b in master_blocks if b["section"] == "certifications" and safe_str(b.get("content", "")).strip()]
     cert_blocks = []
     for b in (llm_certs or master_certs)[:3]:
         cert_blocks.append({
@@ -294,28 +295,27 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             "subsection": safe_str(b.get("subsection", f"cert_{len(cert_blocks)+1}")),
             "content": safe_str(b.get("content", ""))
         })
-    while len(cert_blocks) < 3:
-        cert_blocks.append({"section": "certifications", "subsection": f"cert_{len(cert_blocks)+1}", "content": ""})
+    # (if neither LLM nor master has any, cert_blocks will be blank—no output)
 
-    llm_projects = [b for b in normalized_blocks if b["section"] == "projects"]
-    master_projects = [b for b in master_blocks if b["section"] == "projects"]
+    # Projects: same logic, only if content
+    llm_projects = [b for b in normalized_blocks if b["section"] == "projects" and safe_str(b.get("content", "")).strip()]
+    master_projects = [b for b in master_blocks if b["section"] == "projects" and safe_str(b.get("content", "")).strip()]
     proj_blocks = []
     idx = 0
     for b in llm_projects + master_projects:
         if idx >= 4:
             break
         lines = [safe_str(l) for l in safe_str(b.get("content", "")).split("\n") if safe_str(l).strip()]
-        header = lines[0] if lines else ""
-        bullets = lines[1:]
-        bullets = pad_bullets(bullets, 2)
+        if not lines:
+            continue
+        header = lines[0]
+        bullets = pad_bullets(lines[1:], 2)
         proj_blocks.append({
             "section": "projects",
             "subsection": f"proj_{idx+1}",
             "content": "\n".join([header] + bullets)
         })
         idx += 1
-    while len(proj_blocks) < 4:
-        proj_blocks.append({"section": "projects", "subsection": f"proj_{len(proj_blocks)+1}", "content": ""})
 
     output_blocks = (
         personal_info_blocks +
@@ -327,10 +327,10 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
         proj_blocks
     )
 
-    # Remove duplicate target_roles and ensure all values are strings
+    # Remove duplicate target_roles, ensure all fields are string, skip trailing blanks
     target_roles_found = False
     final_blocks = []
-    for b in output_blocks[:40]:
+    for b in output_blocks:
         s = safe_str(b.get("section", ""))
         sub = safe_str(b.get("subsection", ""))
         c = safe_str(b.get("content", ""))
@@ -338,11 +338,12 @@ def enforce_all_guidelines(normalized_blocks, master_blocks):
             if target_roles_found:
                 continue
             target_roles_found = True
-        final_blocks.append({"section": s, "subsection": sub, "content": c})
-    # Remove trailing lines where all fields are blank
-    while final_blocks and all(v == "" for v in final_blocks[-1].values()):
-        final_blocks.pop()
-    return final_blocks
+        # Do NOT output any section with all blank fields (removes extra trailing blanks)
+        if not (s == "" and sub == "" and c == ""):
+            final_blocks.append({"section": s, "subsection": sub, "content": c})
+
+    # Limit to 42 rows (truncate or just output fewer)
+    return final_blocks[:42]
 
 def parse_and_sanitize_output(raw_response, master_blocks):
     try:
@@ -359,31 +360,51 @@ def full_resume_rewriter(job_description, resume_rows):
     resume_blocks = format_resume_rows(resume_rows)
     resume_str = json.dumps(resume_blocks, indent=2)
 
+    # Privacy-safe generic sample output (not your real info!)
+    generic_example = """
+section,subsection,content
+personal_info,name,[Full Name]
+personal_info,location,[City, State]
+personal_info,phone,[Phone Number]
+personal_info,email,[Email Address]
+personal_info,linkedin,[LinkedIn URL]
+personal_info,github,[GitHub URL]
+personal_info,portfolio,[Portfolio URL]
+personal_info,target_roles,[Target Roles]
+professional_summary,summary,"[2-3 sentences summarizing your experience, skills, and value for this job.]"
+technical_skills,programming_languages,Python | SQL | Excel | Tableau | Power BI
+technical_skills,libraries_tools,Pandas | NumPy | Scikit-learn | Flask | Matplotlib
+technical_skills,skills_focus,Sales Analytics | Pricing Models | Data Pipelines | Metrics Automation
+technical_skills,domains,Sales Performance | Revenue Analysis | Operations Tracking
+professional_experience,role1,"**Job Title | Company | Years**
+• Bullet 1
+• Bullet 2
+• Bullet 3
+• Bullet 4"
+certifications,cert1,"[Certificate Name] | [Year]"
+projects,project1,"**Project Name**
+• Project bullet 1
+• Project bullet 2"
+    """.strip()
+
     prompt = f"""
-You are an expert resume editor. Rewrite the following resume to better match the job description.
+You are an expert resume editor. Your task is to rewrite the following master resume to perfectly match the provided job description.
 
-Return ONLY valid JSON in this format:
+- Prioritize only the most relevant skills, experiences, and projects for the job.
+- Rewrite the summary, skills, experience, and project sections to use the job description's language and requirements.
+- Select and rewrite the 4 most relevant projects (max 2 bullets each).
+- Limit professional experience to 3 jobs (4 bullets for first two, 2 for third).
+- Do NOT include any unrelated or generic projects or bullets.
+- Format your output as a CSV, one line per block, with columns: section,subsection,content (no extra commentary, no markdown, no JSON, no explanation).
 
-[
-  {{
-    "section": "professional_summary",
-    "subsection": "summary",
-    "content": "..."
-  }},
-  ...
-]
+Here is an example of the required output format (values are placeholders):
 
-Guidelines:
-- Skills can be a list of strings
-- Experience can include nested objects with title, company, dates, and responsibilities
-- DO NOT include markdown, commentary, or extra text
-- DO NOT wrap the response in quotes or say "Here's your updated resume"
-- Output raw JSON only
+{generic_example}
 
 Job Description:
 {job_description}
 
-Resume Blocks:
+Master Resume:
 {resume_str}
 """.strip()
 
