@@ -1,0 +1,26 @@
+section,subsection,content
+personal_info,name,Jamie Lee
+personal_info,location,Austin, TX
+personal_info,email,jamie.lee@email.com
+personal_info,phone,555-987-6543
+personal_info,linkedin,linkedin.com/in/jamielee
+personal_info,github,github.com/jamielee
+personal_info,portfolio,jamielee.io
+personal_info,target_roles,Data Analyst | Business Intelligence
+professional_summary,summary,"Detail-oriented data analyst with expertise in data visualization, reporting, and statistical analysis. Passionate about transforming data into actionable insights."
+technical_skills,programming_languages,SQL | Python | R
+technical_skills,libraries_frameworks,Pandas | NumPy | Matplotlib | Seaborn
+technical_skills,tools_platforms,Tableau | Power BI | Excel
+technical_skills,other_skills,Data Cleaning | Dashboard Design | Data Modeling
+professional_experience,data_analyst,"**Data Analyst | Insight Corp | 2021-2024**
+• Created dashboards in Tableau to visualize sales trends.
+• Automated monthly reporting using Python scripts.
+• Conducted statistical analysis to support business decisions."
+certifications,tableau_cert,Tableau Desktop Specialist | 2022
+certifications,excel_cert,Microsoft Excel Expert | 2021
+projects,sales_dashboard,"**Sales Dashboard**
+• Developed interactive Tableau dashboards for sales teams.
+• Enabled real-time filtering and exportable reports."
+projects,data_cleaner,"**Data Cleaning Utility**
+• Built a Python tool to automate data cleaning for CSV files.
+• Reduced manual processing time by 50%."

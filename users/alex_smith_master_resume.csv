@@ -1,0 +1,26 @@
+section,subsection,content
+personal_info,name,Alex Smith
+personal_info,location,New York, NY
+personal_info,email,alex.smith@email.com
+personal_info,phone,555-123-4567
+personal_info,linkedin,linkedin.com/in/alexsmith
+personal_info,github,github.com/alexsmith
+personal_info,portfolio,alexsmith.dev
+personal_info,target_roles,Software Engineer | Web Developer
+professional_summary,summary,"Motivated software engineer with experience in web development, automation, and cloud platforms. Skilled in building scalable applications and collaborating with cross-functional teams."
+technical_skills,programming_languages,Python | JavaScript | Java
+technical_skills,libraries_frameworks,React | Node.js | Flask | Django
+technical_skills,tools_platforms,AWS | Docker | Git | VS Code
+technical_skills,other_skills,Agile | REST APIs | CI/CD | Unit Testing
+professional_experience,web_dev,"**Web Developer | Tech Solutions | 2022-2024**
+• Developed responsive web applications using React and Flask.
+• Automated deployment pipelines with Docker and GitHub Actions.
+• Collaborated with designers to improve UI/UX."
+certifications,aws_cert,AWS Certified Developer | 2023
+certifications,js_cert,JavaScript Specialist | 2022
+projects,portfolio_site,"**Personal Portfolio Website**
+• Designed and deployed a personal website using React and AWS.
+• Integrated contact forms and project showcases."
+projects,task_manager,"**Task Manager App**
+• Built a full-stack task management app with Flask and React.
+• Implemented user authentication and real-time updates."
