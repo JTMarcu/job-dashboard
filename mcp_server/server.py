@@ -5,7 +5,14 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from mcp_server.tools.fetch_job_postings import fetch_job_postings
 from mcp_server.tools.resume_rewriter import full_resume_rewriter
-from mcp_server.tools.full_resume_rewriter_openai import full_resume_rewriter as full_resume_rewriter_openai
+try:
+    from mcp_server.tools.full_resume_rewriter_openai import (
+        full_resume_rewriter as full_resume_rewriter_openai,
+    )
+    _openai_available = True
+except ImportError:
+    full_resume_rewriter_openai = None
+    _openai_available = False
 
 app = FastAPI()
 
@@ -26,7 +33,8 @@ async def invoke_resume_rewriter(request: Request):
     data = await request.json()
     return full_resume_rewriter(**data)
 
-@app.post("/tools/full_resume_rewriter_openai/invoke")
-async def invoke_resume_rewriter_openai(request: Request):
-    data = await request.json()
-    return full_resume_rewriter_openai(**data)
+if _openai_available:
+    @app.post("/tools/full_resume_rewriter_openai/invoke")
+    async def invoke_resume_rewriter_openai(request: Request):
+        data = await request.json()
+        return full_resume_rewriter_openai(**data)

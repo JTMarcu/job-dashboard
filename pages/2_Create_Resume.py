@@ -14,7 +14,7 @@ if "active_profile" not in st.session_state:
     st.stop()
 
 profile_name = st.session_state["active_profile"]
-profile = load_user_profile(profile_name)
+profile = load_user_profile(os.path.join("users", f"{profile_name}.json"))
 master_resume_path = os.path.join("users", f"{profile_name}_master_resume.csv")
 
 st.set_page_config(page_title="Guided Resume Builder", layout="wide")
