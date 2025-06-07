@@ -1,6 +1,6 @@
 # Job Dashboard + Resume Builder
 
-A modular, AI-powered assistant that streamlines your entire job search—from finding roles, to building and tailoring your resume, to exporting ready-to-submit documents. Powered by **Streamlit** (UI), **FastAPI** (backend), and your choice of **local LLMs (Ollama)** or **OpenAI** for resume tailoring.
+A modular, AI-powered assistant that streamlines your entire job search—from finding roles, to building and tailoring your resume, to exporting ready-to-submit documents. Powered by **Streamlit** (UI), **FastAPI** (backend), and your choice of **local LLMs (Ollama/Llama 3)** (with OpenAI and others coming soon) for resume tailoring.
 
 ---
 
@@ -20,7 +20,7 @@ A modular, AI-powered assistant that streamlines your entire job search—from f
 
 ### 3. Tailor Resume to Any Job
 - Paste any job description (or click from job results)
-- Instantly rewrite your resume with local LLM (Ollama) or other LLMs (coming soon)
+- Instantly rewrite your resume with **local LLM (Llama 3 via Ollama)**
 - Strict, ATS-friendly formatting: 3 jobs (4/4/2 bullets), up to 4 projects (2 bullets each)
 - Download tailored resumes, or send directly to the builder for further editing
 
@@ -39,7 +39,7 @@ A modular, AI-powered assistant that streamlines your entire job search—from f
 
 - **Streamlit** — Fast, reactive UI for all workflows
 - **FastAPI** — Modular backend for all tools and integrations
-- **Ollama** (local LLM) or **OpenAI** (cloud) — for AI-powered resume rewriting
+- **Ollama** (local LLM with Llama 3) — for AI-powered resume rewriting
 - **Pandas** / **ReportLab** — Resume data processing and PDF generation
 - **Requests**, **python-dotenv** — API and environment management
 
@@ -68,9 +68,6 @@ job-dashboard/
 ├── resume/
 │   └── generate\_pdf.py
 │
-├── tests/
-│   └── test\_fetcher.py
-│
 ├── users/
 │   ├── active\_profile.json
 │   ├── guest.json
@@ -95,51 +92,111 @@ job-dashboard/
 
 ---
 
-## Coming Soon
+## Getting Started
 
-- One-click cover letter generation (Ollama or OpenAI)
-- Application tracking dashboard with export
-- Resume versioning and tagging
-- Smart job matching by skills and keywords
-- LLM-powered interview prep
+### 1. Clone the repo
+
+```sh
+git clone https://github.com/YOUR-USERNAME/job-dashboard.git
+cd job-dashboard
+````
+
+### 2. Install Python dependencies
+
+```sh
+pip install -r requirements.txt
+```
+
+### 3. Configure your environment variables (API keys, etc.)
+
+```sh
+cp .env.example .env
+# Or manually create .env and add required API keys as variables.
+# You can leave blank if only using local Ollama features.
+```
 
 ---
 
-## Getting Started
+## 🦙 Using Ollama for Local AI Resume Tailoring
 
-```bash
-# 1. Clone the repo
-git clone https://github.com/YOUR-USERNAME/job-dashboard.git
-cd job-dashboard
+**Ollama with Llama 3 is required for resume rewriting to work locally.**
 
-# 2. Install dependencies
-pip install -r requirements.txt
+1. **Install Ollama**
 
-# 3. Configure your environment variables (API keys, etc.)
-cp .env.example .env
-# (Or manually create .env and add required API keys. Leave blank if testing only local features.)
+   * [Download Ollama](https://ollama.com/download) for Windows, macOS, or Linux and install.
 
-# 4. Start the backend (FastAPI server)
-uvicorn mcp_server.server:app --reload
+2. **Start the Ollama server**
 
-# 5. Start the Streamlit UI
-streamlit run 0_Select_Profile.py
-````
+   ```sh
+   ollama serve
+   ```
+
+   * You should see something like `Listening on 127.0.0.1:11434`.
+
+3. **Download the Llama 3 model (do this once)**
+
+   ```sh
+   ollama pull llama3
+   ```
+
+   * Wait for the download (\~4GB the first time).
+
+4. **(Optional) Change Model**
+
+   * By default, the app uses `llama3`.
+   * To use a different model, update `OLLAMA_MODEL` in your `.env`.
+
+5. **Start the backend and UI**
+
+   In two new terminals:
+
+   ```sh
+   uvicorn mcp_server.server:app --reload
+   ```
+
+   ```sh
+   streamlit run 0_Select_Profile.py
+   ```
+
+**Tip:** Ollama, the FastAPI backend, and Streamlit should each run in their own terminal/tab.
+
+---
+
+## Environment File Example
+
+The `.env` file should be **blank by default** or include only placeholders for API keys:
+
+```
+ADZUNA_APP_ID=
+ADZUNA_APP_KEY=
+RAPIDAPI_KEY=
+OLLAMA_URL=http://localhost:11434/api/generate
+OLLAMA_MODEL=llama3
+MCP_SERVER_URL=http://localhost:8000
+```
+
+---
+
+## ❗ OpenAI & Other LLM Integrations — Coming Soon!
+
+* OpenAI (cloud) support and other LLM integrations are planned but **not yet implemented**.
+* For now, resume tailoring works **only with local Ollama/Llama 3**.
+* When OpenAI is ready, instructions will be provided here!
+
+---
+
+## Coming Soon
+
+* One-click cover letter generation (Ollama or OpenAI)
+* Application tracking dashboard with export
+* Resume versioning and tagging
+* Smart job matching by skills and keywords
+* LLM-powered interview prep
 
 ---
 
 ## Notes
 
-* The `.env` file should be **blank by default** or include only placeholders for API keys:
-
-  ```
-  ADZUNA_APP_ID=
-  ADZUNA_APP_KEY=
-  RAPIDAPI_KEY=
-  OLLAMA_URL=http://localhost:11434/api/generate
-  OLLAMA_MODEL=llama3
-  MCP_SERVER_URL=http://localhost:8000
-  ```
 * No personal names or sensitive info are included in code or data by default.
 * Master resumes and user profiles are always saved and loaded locally, per user, in `/users`.
 
