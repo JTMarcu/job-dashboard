@@ -1,26 +1,45 @@
 section,subsection,content
 personal_info,name,Jamie Lee
-personal_info,location,Austin, TX
+personal_info,location,"Austin, TX"
 personal_info,email,jamie.lee@email.com
 personal_info,phone,555-987-6543
 personal_info,linkedin,linkedin.com/in/jamielee
 personal_info,github,github.com/jamielee
 personal_info,portfolio,jamielee.io
 personal_info,target_roles,Data Analyst | Business Intelligence
-professional_summary,summary,"Detail-oriented data analyst with expertise in data visualization, reporting, and statistical analysis. Passionate about transforming data into actionable insights."
-technical_skills,programming_languages,SQL | Python | R
-technical_skills,libraries_frameworks,Pandas | NumPy | Matplotlib | Seaborn
-technical_skills,tools_platforms,Tableau | Power BI | Excel
-technical_skills,other_skills,Data Cleaning | Dashboard Design | Data Modeling
+professional_summary,summary,"Analytical and results-driven data professional with a strong foundation in visualization, reporting, and statistical analysis. Excels at transforming complex data into meaningful insights that drive business decisions. Experienced in designing automated workflows, optimizing data pipelines, and collaborating with cross-functional teams to improve data-driven strategies."
+technical_skills,programming_languages,SQL | Python | R | JavaScript
+technical_skills,libraries_frameworks,Pandas | NumPy | Matplotlib | Seaborn | D3.js
+technical_skills,tools_platforms,Tableau | Power BI | Excel | Looker | Google BigQuery
+technical_skills,other_skills,Data Cleaning | Dashboard Design | Data Modeling | ETL Processes | Predictive Analytics
 professional_experience,data_analyst,"**Data Analyst | Insight Corp | 2021-2024**
 • Created dashboards in Tableau to visualize sales trends.
 • Automated monthly reporting using Python scripts.
 • Conducted statistical analysis to support business decisions."
+professional_experience,bi_analyst,"**Business Intelligence Analyst | Growth Solutions | 2019-2021**
+• Designed Power BI dashboards for financial performance tracking.
+• Developed SQL queries to optimize data retrieval for reporting.
+• Collaborated with executives to refine data visualization strategies."
+professional_experience,data_consultant,"**Data Consultant | Freelance | 2017-2019**
+• Provided data modeling and analysis support to startups.
+• Built predictive models to forecast customer churn rates.
+• Assisted with cloud-based data pipeline integrations."
 certifications,tableau_cert,Tableau Desktop Specialist | 2022
 certifications,excel_cert,Microsoft Excel Expert | 2021
+certifications,google_bigquery_cert,Google BigQuery Data Analyst | 2023
+education,edu_0,**BS in Statistics and Data Science | University of Texas at Austin | 2013-2017**
 projects,sales_dashboard,"**Sales Dashboard**
 • Developed interactive Tableau dashboards for sales teams.
 • Enabled real-time filtering and exportable reports."
 projects,data_cleaner,"**Data Cleaning Utility**
 • Built a Python tool to automate data cleaning for CSV files.
 • Reduced manual processing time by 50%."
+projects,customer_retention,"**Customer Retention Predictor**
+• Created a predictive model to analyze churn probability.
+• Used machine learning techniques to identify retention strategies."
+projects,financial_dashboard,"**Financial Performance Dashboard**
+• Built a Power BI dashboard to visualize key financial KPIs.
+• Integrated real-time data sources for accurate tracking."
+projects,social_media_analytics,"**Social Media Analytics**
+• Analyzed engagement trends using Python and Tableau.
+• Provided actionable insights to optimize digital marketing strategies."
