@@ -9,7 +9,7 @@ import csv
 # Layout constants
 LEFT_MARGIN = 50
 TOP_MARGIN = 50
-LINE_HEIGHT = 13.5
+LINE_HEIGHT = 13
 PAGE_WIDTH, PAGE_HEIGHT = LETTER
 
 # Font settings

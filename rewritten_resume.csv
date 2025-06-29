@@ -1,0 +1,41 @@
+section,subsection,content
+personal_info,name,Jonathan Marcu
+personal_info,location,"La Mesa, CA"
+personal_info,phone,6194835543
+personal_info,email,jonmarcu@live.com
+personal_info,linkedin,linkedin.com
+personal_info,github,github.com/JTMarcu
+personal_info,portfolio,JTMarcu.GitHub.io
+personal_info,target_roles,
+professional_summary,summary,
+technical_skills,programming_languages,
+technical_skills,libraries_tools,
+technical_skills,skills_focus,
+technical_skills,domains,
+professional_experience,data_bi_consultant,
+professional_experience,freelance_dev,
+professional_experience,costco,
+certifications,mit_ds,
+certifications,google_da,
+certifications,google_bi,
+projects,live_data_visualizer,"**Live Data Visualizer** • Streamlit dashboard showing live stock, news, and weather feeds. • Integrated FastAPI, Altair, and MarketCheck API for real • time data."
+projects,san_diego_rentals,"**Brain Tumor Image Classifier** • Built a CNN in PyTorch to classify MRI scans for tumor detection. • Applied transfer learning, data augmentation, and model evaluation with confusion matrix."
+projects,foodhub_insights,"**Melanoma Skin Cancer Detector** • Trained a PyTorch CNN on dermatology images to identify malignant lesions. • Used image normalization, GPU acceleration, and batch processing."
+projects,bellabeat_tracker,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,
+,,

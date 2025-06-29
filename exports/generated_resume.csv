@@ -1,0 +1,42 @@
+section,subsection,content
+personal_info,name,Jonathan Marcu
+personal_info,location,"San Diego, CA"
+personal_info,email,JonMarcu@live.com
+personal_info,phone,(619) 483-5543
+personal_info,linkedin,linkedin.com/in/jon-marcu
+personal_info,github,github.com/JTMarcu
+personal_info,portfolio,JTMarcu.GitHub.io
+personal_info,target_roles,Data Analyst | BI Analyst | Tableau Specialist
+professional_summary,summary,"Data analyst with hands-on experience designing Tableau dashboards and building analytics pipelines for sales, marketing, and finance teams. Skilled in data automation, dashboard UX, and translating complex data into actionable business insights."
+technical_skills,programming_languages,Python | SQL | R | HTML | JavaScript | Excel | Tableau | Power BI | Google Cloud | AWS | Git
+technical_skills,libraries_tools,Pandas | NumPy | Scikit-learn | Flask | ReportLab | Seaborn | Matplotlib | LangChain | FAISS
+technical_skills,skills_focus,Tableau Cloud | Dashboard Development | Marketing & Sales KPIs | Data Pipelines | Automation | Data Storytelling | KPI Reporting | CSV/XML
+technical_skills,domains,Sales & Marketing Analytics | Finance Metrics | Operations Tracking | Decision Support | Forecasting | Self-Service Reporting
+professional_experience,data_bi_consultant,"**Data Analyst / BI Consultant | Government Seminars | 2023–Present**
+• Built Tableau and Power BI dashboards to deliver real-time insights for seminar marketing, sales, and finance teams.
+• Developed forecasting and KPI tracking models to optimize event planning and campaign budgets.
+• Automated satisfaction, registration, and lead conversion reporting using internal and public data.
+• Partnered with stakeholders to design scalable, actionable dashboards for cross-team collaboration."
+professional_experience,freelance_dev,"**Data & Full-Stack Developer | Freelance | 2023–Present**
+• Built Google Cloud pipelines and Tableau dashboards for a healthcare staffing company, supporting sales and marketing analytics.
+• Designed custom, self-serve dashboards to track sales leads and marketing ROI.
+• Automated sales reporting workflows using Python, SQL, and data APIs.
+• Developed AI-powered data tools and a dashboard for real-time business insights."
+professional_experience,costco,"**Service Assistant & Merchant | Costco Wholesale | 2007–2023**
+• Managed inventory/merchandising using POS and sales data.
+• Analyzed sales trends to improve stock levels and reduce waste."
+certifications,mit_ds,MIT Professional Certificate in Data Science & Machine Learning | 2023
+certifications,google_da,Google Data Analytics Professional Certificate | 2024
+certifications,google_bi,Google Business Intelligence Professional Certificate | 2024
+projects,live_data_visualizer,"**Live Data Visualizer**
+• Built Streamlit dashboard showing live sales/market data with FastAPI and Altair.
+• Enabled real-time KPI and financial trend monitoring for business users."
+projects,san_diego_rentals,"**San Diego Rental Price Optimizer**
+• Scraped, cleaned, and analyzed 13K+ rental listings for trend and pricing insights.
+• Built Tableau and Power BI dashboards to visualize geospatial price patterns."
+projects,foodhub_insights,"**FoodHub Restaurant Insights**
+• Analyzed customer ratings and sales data by cuisine, price, and marketing factors.
+• Built interactive dashboards with Tableau and Seaborn for marketing decision-making."
+projects,bellabeat_tracker,"**Bellabeat Wellness Tracker**
+• Cleaned and analyzed device data to uncover trends and optimize health KPIs.
+• Designed Tableau dashboards for self-service analytics and stakeholder reporting."

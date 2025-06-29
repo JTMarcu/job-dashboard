@@ -1,0 +1,35 @@
+Here is the rewritten master resume, perfectly matching the provided job description:
+
+section,subsection,content
+personal_info,name,Jonathan Marcu
+personal_info,location,San Diego, CA
+personal_info,email,JonMarcu@live.com
+personal_info,phone,(619) 483-5543
+personal_info,linkedin,linkedin.com/in/jon-marcu
+personal_info,github,Github.com/JTMarcu
+personal_info,portfolio,JTMarcu.GitHub.io
+personal_info,target_roles,Data Scientist | Machine Learning Engineer | Data Analyst | BI Consultant
+professional_summary,summary,I'm a data-driven professional with expertise in sales analytics, pricing models, and data pipelines. With a strong foundation in Python, SQL, Tableau, and Power BI, I've developed predictive models to forecast outcomes, automated workflows, and generated insights to support smarter decisions.
+
+technical_skills,programming_languages,Python | SQL
+technical_skills,skills_focus,Sales Analytics | Pricing Models | Data Pipelines | Metrics Automation
+technical_skills,domains,Sales Performance | Revenue Analysis | Operations Tracking
+
+professional_experience,role1,**Data Analyst / BI Consultant | Government Seminars | 2023-Present**
+• Built Tableau/Power BI dashboards to track key seminar metrics (registration, attendance, satisfaction).
+• Developed forecasting models to predict attendance and optimize resource planning.
+• Combined internal and public data to analyze marketing impact and improve federal outreach.
+
+professional_experience,role2,**Data & Full-Stack Developer | Freelance | 2023-Present**
+• Designed and implemented data pipelines using Google Cloud to automate data collection and processing for a medical staffing company.
+• Built interactive dashboards to visualize key metrics, enabling data-driven prioritization of job targeting and workflow optimization.
+
+projects,project1,**Sales Analytics Case Study**
+• Analyzed sales trends and customer behavior to identify opportunities for growth and retention.
+• Developed predictive models using Python and SQL to forecast revenue and optimize pricing strategies.
+• Created data visualizations in Tableau/Power BI to track key performance indicators (KPIs) and provide actionable insights.
+
+projects,project2,**Pricing Model Development**
+• Built a machine learning model using Python to predict optimal prices based on customer behavior and market trends.
+• Applied feature engineering techniques to optimize model performance and reduce bias.
+• Deployed the model in a production-ready environment for real-time pricing decisions.
